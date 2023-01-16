@@ -259,9 +259,12 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
     plt.gca().spines['right'].set_visible(False)
 
     # Plot classes names
-    plt.text(0.5 - 0.085 * len(class_names[0]) / 8,
-             len(text_features) - 0.9, class_names[0])
-    plt.text(0.51, len(text_features) - 0.9, class_names[1])
+    plt.text(0.5 - 0.10 * len(class_names[0]) / 8,
+             len(text_features)*1.01 - 0.9, class_names[0], color='#ff0055D2', fontweight='bold')
+    plt.text(0.49, len(text_features)*1.01 - 0.9, f'➜',
+             color='#c20000', fontweight='bold')
+    plt.text(0.51, len(text_features)*1.01 - 0.9,
+             class_names[1], color='#008ae7D2', fontweight='bold')
 
     # Plot Counterfactual lines
     for i in range(len(single_points)):
