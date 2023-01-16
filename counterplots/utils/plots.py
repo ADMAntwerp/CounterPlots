@@ -225,8 +225,6 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
     y_lim_high = len(single_points_chart) - 0.9
     x_lim_low = 0
     x_lim_high = 1
-    cmap = ["#d12771", "#4589ff", "#007d79", "#8a3ffc",
-            "#ffb55a", "#ffee65", "#beb9db", "#fdcce5", "#8bd3c7"]
 
     fig = plt.figure(figsize=(x_dim, y_dim))
     ax = fig.add_subplot(111)
@@ -239,23 +237,26 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
 
     # Plot single change points
     for idx_p, p in enumerate(single_points_chart):
-        plt.scatter([p[1]], [p[0]], color=cmap[idx_p], s=100)
+        plt.scatter([p[1]], [p[0]], color='#ff0055D2' if p[1]
+                    >= 0.5 else '#008ae7D2', s=100)
 
     # Plot feature names and value changes
     max_text_features = max([len(f) for f in text_features])
     for i in range(len(text_features)):
         plt.text(-0.012*max_text_features, i,
-                 text_features[i], color=cmap[i], fontsize=12)
+                 text_features[i], color='#545454', fontsize=12)
 
     # Verify if there are multiple change points
     if len(mulitple_points_chart) > 0:
         # Plot multiple change points
         plt.scatter(mulitple_points_chart[:, 1],
-                    mulitple_points_chart_y, color='blue', s=10)
+                    mulitple_points_chart_y, color='#E0423A' if p[1]
+                    >= 0.5 else 'blue', s=10)
 
     # Plot counterfactual point
     cf_pred_x_1 = np.mean([*range(len(single_points))])
-    plt.scatter([cf_score], [cf_pred_x_1], color='#FFB449', s=100)
+    plt.scatter([cf_score], [cf_pred_x_1], color='#ff0055D2' if cf_score
+                >= 0.5 else '#008ae7D2', s=100)
 
     # Plot a vertical line at the threshold
     plt.axvline(x=0.5, color='#c20000', linestyle='dashed', zorder=0)
