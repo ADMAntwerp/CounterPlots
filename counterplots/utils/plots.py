@@ -245,13 +245,19 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
     cf_pred_x_1 = np.mean([*range(len(single_points))])
     plt.scatter([cf_score], [cf_pred_x_1], color='#FFB449', s=100)
 
-    # Plot a vertical line at the factual score
-    plt.axvline(x=factual_score, color='#8f8f8f', linestyle='dashed', zorder=0)
-    plt.text(factual_score, len(text_features) - 1.2, 'Factual',
-             rotation='vertical', color='#8f8f8f', fontsize=10)
-
     # Plot a vertical line at the threshold
     plt.axvline(x=0.5, color='#c20000', linestyle='dashed', zorder=0)
+
+    # Plot a vertical line at the factual score
+    plt.axvline(x=factual_score, color='#ff0055D2',
+                linestyle='dashed', zorder=0)
+    plt.text(factual_score - 0.06, len(text_features) *
+             1.01 - 0.9, 'Factual Score', color='#ff0055D2')
+
+    # Plot a vertical line at the counterfactual score
+    plt.axvline(x=cf_score, color='#008ae7D2', linestyle='dashed', zorder=0)
+    plt.text(cf_score - 0.10, len(text_features)*1.01 -
+             0.9, 'Counterfactual Score', color='#008ae7D2')
 
     plt.gca().axes.get_yaxis().set_visible(False)
     plt.gca().spines['top'].set_visible(False)
@@ -260,10 +266,10 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
 
     # Plot classes names
     plt.text(0.5 - 0.10 * len(class_names[0]) / 8,
-             len(text_features)*1.01 - 0.9, class_names[0], color='#ff0055D2', fontweight='bold')
-    plt.text(0.49, len(text_features)*1.01 - 0.9, f'➜',
+             len(text_features)*1.01 - 0.9 + 0.035*len(text_features), class_names[0], color='#ff0055D2', fontweight='bold')
+    plt.text(0.49, len(text_features)*1.01 - 0.9 + 0.035*len(text_features), f'➜',
              color='#c20000', fontweight='bold')
-    plt.text(0.51, len(text_features)*1.01 - 0.9,
+    plt.text(0.51, len(text_features)*1.01 - 0.9 + 0.035*len(text_features),
              class_names[1], color='#008ae7D2', fontweight='bold')
 
     # Plot Counterfactual lines
