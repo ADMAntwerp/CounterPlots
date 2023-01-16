@@ -90,7 +90,7 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
 
     # Print class names
     size_factual_class = mpl.textpath.TextPath(
-        (0, 0), classes[0], size=fontsize).get_extents().width * 0.2037 + 1.090
+        (0, 0), classes[0], size=fontsize).get_extents().width * 0.2037 + 1.4
     plt.text(x_threshold - size_factual_class, scale_y + fontsize * 7, f'{classes[0]}', color='#ff0055D2',
              fontsize=fontsize, fontweight='bold')
     plt.text(x_threshold - 1, scale_y + fontsize * 7, f'➜',
