@@ -11,26 +11,19 @@ def make_greedy_plot(factual_score, features_data, class_names, save_path):
     scatter_points = [f['score'] for f in features_data]
     scatter_points.insert(0, factual_score)
 
-    cmap = ["#8f8f8f", "#d12771", "#4589ff", "#007d79", "#8a3ffc", "#ffb55a", "#ffee65", "#beb9db", "#fdcce5",
-            "#8bd3c7"]
-    markers = ['+', 'o', '^', 's', 'p', 'P', '*', 'X', 'D']
-    cmark = ['●', '▲', '■', '⬟', '✚', '✖', '★', '◆']
-
     plt.plot(scatter_points, range(len(scatter_points)),
              color='#c4c4c4', linestyle='dashed', zorder=0)
     for c_idx, point in enumerate(scatter_points):
         plt.scatter(
             [point],
             [c_idx],
-            marker=markers[c_idx],
-            color=cmap[c_idx],
-            s=100,
-            edgecolors='#545454' if c_idx != 0 else None,)
+            color='#ff0055D2' if point < 0.5 else '#008ae7D2',
+            s=100)
 
     features_names = ['Factual']
     for feat_idx, f in enumerate(features_data):
         features_names.append(
-            f'{cmark[feat_idx]} - {f["name"]} ({f["factual"]}➜{f["counterfactual"]})')
+            f'{f["name"]} ({f["factual"]}➜{f["counterfactual"]})')
     max_feat_names_length = max([len(feat_name)
                                 for feat_name in features_names])
 
@@ -51,10 +44,7 @@ def make_greedy_plot(factual_score, features_data, class_names, save_path):
 
     for feat_idx, feat_name in enumerate(features_names):
         plt.text(-0.02 * max_feat_names_length, feat_idx,
-                 feat_name, color=cmap[feat_idx], fontsize=12)
-        if feat_idx > 1:
-            plt.text(-0.02 * max_feat_names_length, feat_idx - 0.35, f'+{",".join(cmark[:feat_idx - 1])}',
-                     color='#8f8f8f', fontsize=12, bbox=dict(facecolor='none', edgecolor='#8f8f8f'))
+                 feat_name, color='#545454', fontsize=12)
 
     # Print binary class
     plt.text(0.5 - 0.14 * len(list(class_names.values())[0]) / 8, len(features_names) - 0.8 + (len(features_names) + 1)*0.04,
