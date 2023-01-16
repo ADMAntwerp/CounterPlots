@@ -257,8 +257,8 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
 
     # Plot classes names
     plt.text(0.5 - 0.085 * len(class_names[0]) / 8,
-             len(text_features) - 1, class_names[0])
-    plt.text(0.51, len(text_features) - 1, class_names[1])
+             len(text_features) - 0.9, class_names[0])
+    plt.text(0.51, len(text_features) - 0.9, class_names[1])
 
     # Plot Counterfactual lines
     for i in range(len(single_points)):
