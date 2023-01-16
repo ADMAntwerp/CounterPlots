@@ -45,9 +45,9 @@ def make_greedy_plot(factual_score, features_data, class_names, save_path):
                      color='#8f8f8f', fontsize=12, bbox=dict(facecolor='none', edgecolor='#8f8f8f'))
 
     # Print binary class
-    plt.text(0.5 - 0.11 * len(list(class_names.values())[0]) / 8, len(features_names) - 0.8,
+    plt.text(0.5 - 0.125 * len(list(class_names.values())[0]) / 8, len(features_names) - 0.9,
              list(class_names.values())[0])
-    plt.text(0.51, len(features_names) - 0.8, list(class_names.values())[1])
+    plt.text(0.51, len(features_names) - 0.9, list(class_names.values())[1])
 
     plt.gca().axes.get_yaxis().set_visible(False)
     plt.gca().spines['top'].set_visible(False)
