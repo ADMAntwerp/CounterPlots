@@ -86,7 +86,7 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
     plt.text(-5, scale_y + fontsize * 4, 'Factual Score',
              color='#ff0055', fontsize=fontsize)
     plt.text(0, scale_y, factual_score, color='#ff0055',
-             fontsize=fontsize, fontweight='bold')
+             fontsize=fontsize)
 
     # Print class names
     size_factual_class = mpl.textpath.TextPath(
@@ -174,8 +174,7 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
             scale_y,
             feat_data['score'],
             color='#008ae7' if f_idx == len(features_data) - 1 else '#999999',
-            fontsize=fontsize,
-            fontweight='bold')
+            fontsize=fontsize)
 
     # Plot bar for the counterfactual score
     plt.bar(current_x, scale_y - 10, width=0.5, color='#008ae7', linewidth=1)
