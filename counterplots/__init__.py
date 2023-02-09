@@ -19,6 +19,14 @@ class CreatePlot:
             feature_names: List[str] = None,
             class_names: Dict[int, str] = None):
 
+        # If feature_names is not provided, create it
+        if feature_names is None:
+            feature_names = [f'f{i+1}' for i in range(len(factual))]
+
+        # If class_names is not provided, create it
+        if class_names is None:
+            class_names = {0: '0', 1: '1'}
+
         # Convert factual and cf to numpy arrays
         self.factual = np.array(factual)
         self.cf = np.array(cf)
