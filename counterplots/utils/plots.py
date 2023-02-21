@@ -121,8 +121,8 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
 
         return Path(verts, codes)
 
-    # Bar for feature names and feature changes
-    plt.bar(0, -scale_y + 10, width=200, color='#ebebeb', linewidth=0)
+    # Bar for feature names and feature changes / Removed
+    # plt.bar(0, -scale_y + 10, width=200, color='#ebebeb', linewidth=0)
 
     current_x = 0
     x_left_pos = []
