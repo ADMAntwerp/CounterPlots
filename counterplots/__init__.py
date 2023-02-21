@@ -4,7 +4,8 @@ from typing import Callable, List, Dict
 import numpy as np
 
 from counterplots.utils.plots import make_greedy_plot, make_countershapley_plot, make_constellation_plot
-from counterplots.utils.process import create_adapted_model_and_class, greedy_strategy, calc_shapley_values_between
+from counterplots.utils.process import create_adapted_model_and_class, greedy_strategy, calc_shapley_values_between, \
+    _convert_legendvalue
 from counterplots.utils.verification import verify_factual_counterfactual_shape, verify_factual_cf,  \
     verify_feature_names, verify_model_prediction, verify_binary_class, verify_class_names
 
@@ -93,16 +94,8 @@ class CreatePlot:
             cf_value = self.cf[feat]
 
             # Adjust text of modification values
-            if len(str(factual_raw_value)) > 6:
-                factual_value = f'{factual_raw_value:.2E}' if type(factual_raw_value) not in [
-                    int, str] else factual_raw_value
-            else:
-                factual_value = factual_raw_value
-            if len(str(cf_value)) > 6:
-                counterfactual_value = f'{cf_value:.2E}' if type(
-                    cf_value) not in [int, str] else cf_value
-            else:
-                counterfactual_value = cf_value
+            factual_value = _convert_legendvalue(factual_raw_value)
+            counterfactual_value = _convert_legendvalue(cf_value)
 
             features_data.append({
                 'x': contrib/sum_contributions*100,
@@ -148,16 +141,9 @@ class CreatePlot:
             # Adjust text of modification values
             factual_raw_value = self.factual[i]
             cf_value = self.cf[i]
-            if len(str(factual_raw_value)) > 6:
-                factual_value = f'{factual_raw_value:.2E}' if type(factual_raw_value) not in [
-                    int, str] else factual_raw_value
-            else:
-                factual_value = factual_raw_value
-            if len(str(cf_value)) > 6:
-                counterfactual_value = f'{cf_value:.2E}' if type(
-                    cf_value) not in [int, str] else cf_value
-            else:
-                counterfactual_value = cf_value
+
+            factual_value = _convert_legendvalue(factual_raw_value)
+            counterfactual_value = _convert_legendvalue(cf_value)
 
             factual_feat_text = str(factual_value)
             cf_feat_text = str(counterfactual_value)

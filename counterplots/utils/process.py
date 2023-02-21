@@ -68,18 +68,9 @@ def greedy_strategy(factual, cf, adapted_model, feature_names):
         current_factual = modified_factuals[np.argmax(modified_factuals_pred)]
 
         # Adjust text of modification values
-        if len(str(best_factual_feature_value)) > 6:
-            factual_value = f'{best_factual_feature_value:.2E}' if factual_value_type not in [
-                int, str] else best_factual_feature_value
-        else:
-            factual_value = best_factual_feature_value
-        if len(str(best_cf_feature_value)) > 6:
-            counterfactual_value = f'{best_cf_feature_value:.2E}' if counterfactual_value_type not in [
-                int, str] else best_cf_feature_value
-        else:
-            counterfactual_value = best_cf_feature_value
-        print(
-            f'Feature: {best_feat_name}, Factual: {factual_value}, Counterfactual: {counterfactual_value}, Score: {best_pred:.2f}')
+        factual_value = _convert_legendvalue(best_factual_feature_value)
+        counterfactual_value = _convert_legendvalue(best_cf_feature_value)
+
         features_data.append({
             'score': best_pred,
             'name': best_feat_name,
@@ -180,3 +171,24 @@ def calc_shapley_values_between(instance1, instance2, model, class_of_interest_i
     feature_contributions, ind = zip(
         *sorted(zip(feature_contributions, indices_feature_diff)))
     return feature_contributions[::-1], ind[::-1]
+
+
+def _format_e(x):
+    return '{:.2e}'.format(x).replace('e+0', 'E').replace('e-0', 'E-').replace('e+', 'E').replace('e-', 'E-')
+
+
+def _convert_legendvalue(x):
+    # Verify if x is a number
+    try:
+        xn = float(x)
+        # Verify if number has decimal places
+        if xn % 1 == 0:
+            # If number > 1000, convert to scientific notation
+            if xn > 1000:
+                return _format_e(xn)
+            else:
+                return x
+        else:
+            return _format_e(xn)
+    except ValueError:
+        return x
