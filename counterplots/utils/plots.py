@@ -27,32 +27,36 @@ def make_greedy_plot(factual_score, features_data, class_names, save_path):
     max_feat_names_length = max([len(feat_name)
                                 for feat_name in features_names])
 
-    # Plot a vertical line at the point of the highest score
-    plt.axvline(x=0.5, color='#c20000', linestyle='dashed', zorder=0)
+    # Plot a vertical line at the threshold score
+    plt.axvline(x=0.5, color='#c20000', zorder=0, linewidth=0.5)
 
     # Plot a vertical line at the factual score
     plt.axvline(x=factual_score, color='#ff0055D2',
                 linestyle='dashed', zorder=0)
-    plt.text(factual_score - 0.088, len(features_names) -
-             0.8, 'Factual Score', color='#ff0055D2')
+    plt.text(factual_score - 0.088, len(features_names)*1.04 -
+             0.9, 'Factual Score', color='#ff0055D2')
 
     # Plot a vertical line at the counterfactual score
     plt.axvline(x=scatter_points[-1],
                 color='#008ae7D2', linestyle='dashed', zorder=0)
-    plt.text(scatter_points[-1] - 0.15, len(features_names) -
-             0.8, 'Counterfactual Score', color='#008ae7D2')
+    plt.text(scatter_points[-1] - 0.15, len(features_names)*1.04 -
+             0.9, 'Counterfactual Score', color='#008ae7D2')
 
     for feat_idx, feat_name in enumerate(features_names):
         plt.text(-0.02 * max_feat_names_length, feat_idx,
                  feat_name, color='#545454', fontsize=12)
 
     # Print binary class
-    plt.text(0.5 - 0.14 * len(list(class_names.values())[0]) / 8, len(features_names) - 0.8 + (len(features_names) + 1)*0.04,
-             list(class_names.values())[0], color='#ff0055D2', fontweight='bold')
+    class_0_name = list(class_names.values())[0]
+    class_1_name = list(class_names.values())[1]
+    size_factual_class = mpl.textpath.TextPath(
+        (0, 0), class_0_name).get_extents().width * 0.0026
+    plt.text(0.47 - size_factual_class, len(features_names) - 0.8 + (len(features_names) + 1)*0.04,
+             class_0_name, color='#ff0055D2', fontweight='bold')
     plt.text(0.49, len(features_names) - 0.8 + (len(features_names) + 1)*0.04, f'➜',
              color='#c20000', fontweight='bold')
-    plt.text(0.52, len(features_names) - 0.8 + (len(features_names) + 1)*0.04, list(class_names.values())
-             [1], color='#008ae7D2', fontweight='bold')
+    plt.text(0.52, len(features_names) - 0.8 + (len(features_names) + 1)
+             * 0.04, class_1_name, color='#008ae7D2', fontweight='bold')
 
     plt.gca().axes.get_yaxis().set_visible(False)
     plt.gca().spines['top'].set_visible(False)
@@ -248,17 +252,18 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
                 >= 0.5 else '#ff0055D2', s=100)
 
     # Plot a vertical line at the threshold
-    plt.axvline(x=0.5, color='#c20000', linestyle='dashed', zorder=0)
+    plt.axvline(x=0.5, color='#c20000', zorder=0, linewidth=0.5)
 
     # Plot a vertical line at the factual score
     plt.axvline(x=factual_score, color='#ff0055D2',
                 linestyle='dashed', zorder=0)
-    plt.text(factual_score - 0.06, len(text_features) -
-             0.9, 'Factual Score', color='#ff0055D2')
+    plt.text(factual_score - 0.06, len(text_features) *
+             1.01 - 0.9, 'Factual Score', color='#ff0055D2')
 
     # Plot a vertical line at the counterfactual score
-    plt.axvline(x=cf_score, color='#008ae7D2', linestyle='dashed', zorder=0)
-    plt.text(cf_score - 0.10, len(text_features) - 0.9,
+    plt.axvline(x=cf_score, color='#008ae7D2',
+                linestyle='dashed', zorder=0)
+    plt.text(cf_score - 0.10, len(text_features)*1.01 - 0.9,
              'Counterfactual Score', color='#008ae7D2')
 
     plt.gca().axes.get_yaxis().set_visible(False)
@@ -267,12 +272,16 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
     plt.gca().spines['right'].set_visible(False)
 
     # Plot classes names
-    plt.text(0.5 - 0.10 * len(class_names[0]) / 8,
-             len(text_features) - 0.9 + len(text_features)*0.04, class_names[0], color='#ff0055D2', fontweight='bold')
+    class_0_name = class_names[0]
+    class_1_name = class_names[1]
+    size_factual_class = mpl.textpath.TextPath(
+        (0, 0), class_0_name).get_extents().width * 0.0026
+    plt.text(0.48 - size_factual_class,
+             len(text_features) - 0.9 + len(text_features)*0.04, class_0_name, color='#ff0055D2', fontweight='bold')
     plt.text(0.49, len(text_features) - 0.9 + len(text_features)*0.04, f'➜',
              color='#c20000', fontweight='bold')
     plt.text(0.51, len(text_features) - 0.9 + len(text_features)*0.04,
-             class_names[1], color='#008ae7D2', fontweight='bold')
+             class_1_name, color='#008ae7D2', fontweight='bold')
 
     # Plot Counterfactual lines
     for i in range(len(single_points)):
