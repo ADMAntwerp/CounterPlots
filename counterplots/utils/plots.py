@@ -243,8 +243,10 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
     if len(mulitple_points_chart) > 0:
         # Plot multiple change points
         plt.scatter(mulitple_points_chart[:, 1],
-                    mulitple_points_chart_y, color='blue' if p[1]
-                    >= 0.5 else '#E0423A', s=10)
+                    mulitple_points_chart_y,
+                    color=['#E0423A' if s <
+                           0.5 else 'blue' for s in mulitple_points_chart[:, 1]],
+                    s=10)
 
     # Plot counterfactual point
     cf_pred_x_1 = np.mean([*range(len(single_points))])
