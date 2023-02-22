@@ -51,11 +51,11 @@ def make_greedy_plot(factual_score, features_data, class_names, save_path):
     class_1_name = list(class_names.values())[1]
     size_factual_class = mpl.textpath.TextPath(
         (0, 0), class_0_name).get_extents().width * 0.003
-    plt.text(0.47 - size_factual_class - max([len(f) for f in features_names])*0.0001, len(features_names) - 0.8 + (len(features_names) + 1)*0.04,
+    plt.text(0.47 - size_factual_class - max([len(f) for f in features_names])*0.0001, len(features_names) - 0.75 + (len(features_names) + 1)*0.04,
              class_0_name, color='#ff0055D2', fontweight='bold')
-    plt.text(0.49, len(features_names) - 0.8 + (len(features_names) + 1)*0.04, f'➜',
+    plt.text(0.49, len(features_names) - 0.75 + (len(features_names) + 1)*0.04, f'➜',
              color='#c20000', fontweight='bold')
-    plt.text(0.52, len(features_names) - 0.8 + (len(features_names) + 1)
+    plt.text(0.52, len(features_names) - 0.75 + (len(features_names) + 1)
              * 0.04, class_1_name, color='#008ae7D2', fontweight='bold')
 
     plt.gca().axes.get_yaxis().set_visible(False)
