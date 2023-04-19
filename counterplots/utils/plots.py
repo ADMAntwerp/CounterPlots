@@ -76,31 +76,11 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
     scale_x = 100
     scale_y = 100
     bar_y_height = scale_y / 2
+    bar_y_height_sub = scale_y / 8.0
     fontsize = 10
-    color_factual = '#ff0055D2'
-    color_counterfactual = '#008ae7D2'
-
-    max_score = features_data[-1]['score']
-
-    x_threshold = (0.5 - factual_score) / \
-        (features_data[-1]['score'] - factual_score)*100
-
-    # Draw bar for the factual score
-    plt.bar(0, scale_y - 10, width=0.5, color='#ff0055', linewidth=1)
-    plt.text(-5, scale_y + fontsize * 4, 'Factual Score',
-             color='#ff0055', fontsize=fontsize)
-    plt.text(0, scale_y, factual_score, color='#ff0055',
-             fontsize=fontsize)
-
-    # Print class names
-    size_factual_class = mpl.textpath.TextPath(
-        (0, 0), classes[0], size=fontsize).get_extents().width * 0.2037 + 1.4
-    plt.text(x_threshold - size_factual_class, scale_y + fontsize * 7, f'{classes[0]}', color='#ff0055D2',
-             fontsize=fontsize, fontweight='bold')
-    plt.text(x_threshold - 1, scale_y + fontsize * 7, f'➜',
-             color='#c20000', fontsize=fontsize, fontweight='bold')
-    plt.text(x_threshold + 1, scale_y + fontsize * 7, f'{classes[1]}', color='#008ae7D2', fontsize=fontsize,
-             fontweight='bold')
+    color_bar = '#48C975D2'
+    cf_score = features_data[-1]['score']
+    sum_countershapley = cf_score - factual_score
 
     # Beak must be always the 4%
     def create_bar(start_x, end_x, no_beak=False):
@@ -127,7 +107,7 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
 
     # Bar for feature names and feature changes / Removed
     # plt.bar(0, -scale_y + 10, width=200, color='#ebebeb', linewidth=0)
-
+    prev_score = factual_score
     current_x = 0
     x_left_pos = []
     for f_idx, feat_data in enumerate(features_data):
@@ -146,18 +126,9 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
         feature_change_text = f"{feat_data['factual']}➜{feat_data['counterfactual']}"
 
         # Plot bar up to 50% of the plot with the factual color
-        if x_size < x_threshold:
-            ax.add_patch(patches.PathPatch(create_bar(
-                current_x, x_size), facecolor=color_factual, lw=0))
-        else:
-            if current_x < x_threshold:
-                ax.add_patch(
-                    patches.PathPatch(create_bar(current_x, x_threshold, no_beak=True), facecolor=color_factual, lw=0))
-                ax.add_patch(patches.PathPatch(create_bar(
-                    x_threshold, x_size), facecolor=color_counterfactual, lw=0))
-            else:
-                ax.add_patch(patches.PathPatch(create_bar(
-                    current_x, x_size), facecolor=color_counterfactual, lw=0))
+        ax.add_patch(patches.PathPatch(create_bar(
+            current_x, x_size), facecolor=color_bar, lw=0))
+
 
         # Plot text for feature changes
         feat_change_text = mpl.textpath.TextPath(
@@ -170,24 +141,53 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
             color='#545454',
             fontsize=fontsize)
 
-        current_x = x_size
-
-        # Print score bold
+        # # Print CounterShapley values
+        # feat_cs_score = round(feat_data['score'] - prev_score, 2)
+        # feat_cs_score_text = mpl.textpath.TextPath(
+        #     (0, 0), str(feat_cs_score), size=fontsize)
+        # plt.text(
+        #     current_x + (x_size - current_x) / 2 -
+        #     feat_cs_score_text.get_extents().width * 0.1,
+        #     bar_y_height_sub,
+        #     feat_cs_score,
+        #     color='white',
+        #     fontsize=fontsize,
+        #     weight="bold")
+        # Print Percentage of CounterShapley
+        feat_cs_score_percentage = round((feat_data['score'] - prev_score)/sum_countershapley*100, 1)
+        feat_cs_score_percentage_text = mpl.textpath.TextPath(
+            (0, 0), f'{feat_cs_score_percentage}%', size=fontsize)
         plt.text(
-            current_x,
-            scale_y,
-            feat_data['score'],
-            color='#008ae7' if f_idx == len(features_data) - 1 else '#999999',
-            fontsize=fontsize)
+            current_x + (x_size - current_x) / 2 -
+            feat_cs_score_percentage_text.get_extents().width * 0.085,
+            bar_y_height_sub,
+            f'{feat_cs_score_percentage}%',
+            color='white',
+            fontsize=fontsize,
+            weight="bold")
+
+        current_x = x_size
+        prev_score = feat_data['score']
+
+    # Print CF score
+    plt.text(
+        current_x,
+        scale_y,
+        round(features_data[-1]['score'], 2),
+        color='#008ae7',
+        fontsize=fontsize)
+
+    # Draw bar for the factual score
+    plt.bar(0, scale_y - 10, width=0.5, color='#ff0055', linewidth=1)
+    plt.text(-5, scale_y + fontsize * 4, 'Factual Score',
+             color='#ff0055', fontsize=fontsize)
+    plt.text(0, scale_y, factual_score, color='#ff0055',
+             fontsize=fontsize)
 
     # Plot bar for the counterfactual score
     plt.bar(current_x, scale_y - 10, width=0.5, color='#008ae7', linewidth=1)
     plt.text(current_x - 10, scale_y + fontsize * 4,
              'Counterfactual Score', color='#008ae7', fontsize=fontsize)
-
-    # Draw bar for threshold
-    plt.bar(x_threshold, scale_y - 10, width=0.25,
-            color='#c20000', linewidth=1)
 
     # Remove y axis
     plt.gca().axes.get_yaxis().set_visible(False)
