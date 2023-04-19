@@ -110,7 +110,7 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
     prev_score = factual_score
     current_x = 0
     x_left_pos = []
-    for f_idx, feat_data in enumerate(features_data):
+    for _, feat_data in enumerate(features_data):
         x_left_pos.append(current_x)
         x_size = feat_data['x'] * 100 / scale_x + current_x
 
@@ -118,7 +118,7 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
         plt.text(
             current_x + (x_size - current_x) / 2 -
             len(feat_data['name']) * fontsize / 10 / 2,
-            -30,
+            -40,
             feat_data['name'],
             color='#545454',
             fontsize=fontsize)
@@ -136,7 +136,7 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
         plt.text(
             current_x + (x_size - current_x)/2 -
             feat_change_text.get_extents().width * 0.1,
-            -70,
+            -80,
             feature_change_text,
             color='#545454',
             fontsize=fontsize)
@@ -198,8 +198,9 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
     plt.gca().spines['right'].set_visible(False)
     plt.gca().spines['bottom'].set_visible(False)
 
-    for l_pos in x_left_pos:
+    for l_pos in x_left_pos:  # little dividers between x labels
         plt.bar(l_pos, -scale_y + 10, width=0.2, color='#cccccc', linewidth=0)
+    plt.bar(scale_x, -scale_y + 10, width=0.2, color='#cccccc', linewidth=0)  # divider at the end
 
     ax.set_xlim(0, scale_x)
     ax.set_ylim(-scale_y, scale_y + 70)
