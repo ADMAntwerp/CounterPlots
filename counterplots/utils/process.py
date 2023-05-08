@@ -183,12 +183,16 @@ def _convert_legendvalue(x):
         xn = float(x)
         # Verify if number has decimal places
         if xn % 1 == 0:
-            # If number > 1000, convert to scientific notation
-            if xn > 1000:
+            # If number > 9999, convert to scientific notation
+            if xn > 9999:
                 return _format_e(xn)
             else:
                 return x
         else:
-            return _format_e(xn)
+            # If decimal places take more than 5 characters
+            if abs(round(xn, 5)) <= 0.00001:
+                return _format_e(xn)
+            else:
+                return round(xn, 5)
     except ValueError:
         return x

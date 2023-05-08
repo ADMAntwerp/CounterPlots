@@ -99,7 +99,7 @@ class CreatePlot:
 
             features_data.append({
                 'x': contrib/sum_contributions*100,
-                'score': round(current_score, 2),
+                'score': current_score,
                 'name': self.feature_names[feat],
 
                 'factual': factual_value,
