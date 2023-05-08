@@ -107,7 +107,7 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
 
     # Bar for feature names and feature changes / Removed
     # plt.bar(0, -scale_y + 10, width=200, color='#ebebeb', linewidth=0)
-    prev_score = factual_score
+
     current_x = 0
     x_left_pos = []
     for f_idx, feat_data in enumerate(features_data):
@@ -279,6 +279,7 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
     size_factual_class = mpl.textpath.TextPath(
         (0, 0), class_0_name).get_extents().width * 0.002
     plt.text(0.48 - size_factual_class - max([len(f) for f in text_features])*0.0001,
+
              len(text_features) - 0.9 + len(text_features)*0.04, class_0_name, color='#ff0055D2', fontweight='bold')
     plt.text(0.49, len(text_features) - 0.9 + len(text_features)*0.04, f'➜',
              color='#c20000', fontweight='bold')
