@@ -107,10 +107,10 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
 
     # Bar for feature names and feature changes / Removed
     # plt.bar(0, -scale_y + 10, width=200, color='#ebebeb', linewidth=0)
-
+    prev_score = factual_score
     current_x = 0
     x_left_pos = []
-    for f_idx, feat_data in enumerate(features_data):
+    for _, feat_data in enumerate(features_data):
         x_left_pos.append(current_x)
         x_size = feat_data['x'] * 100 / scale_x + current_x
 
@@ -118,7 +118,7 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
         plt.text(
             current_x + (x_size - current_x) / 2 -
             len(feat_data['name']) * fontsize / 10 / 2,
-            -30,
+            -40,
             feat_data['name'],
             color='#545454',
             fontsize=fontsize)
@@ -129,14 +129,13 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
         ax.add_patch(patches.PathPatch(create_bar(
             current_x, x_size), facecolor=color_bar, lw=0))
 
-
         # Plot text for feature changes
         feat_change_text = mpl.textpath.TextPath(
             (0, 0), feature_change_text, size=fontsize)
         plt.text(
             current_x + (x_size - current_x)/2 -
             feat_change_text.get_extents().width * 0.1,
-            -70,
+            -80,
             feature_change_text,
             color='#545454',
             fontsize=fontsize)
@@ -154,7 +153,8 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
         #     fontsize=fontsize,
         #     weight="bold")
         # Print Percentage of CounterShapley
-        feat_cs_score_percentage = round((feat_data['score'] - prev_score)/sum_countershapley*100, 1)
+        feat_cs_score_percentage = round(
+            (feat_data['score'] - prev_score)/sum_countershapley*100, 1)
         feat_cs_score_percentage_text = mpl.textpath.TextPath(
             (0, 0), f'{feat_cs_score_percentage}%', size=fontsize)
         plt.text(
@@ -198,8 +198,10 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
     plt.gca().spines['right'].set_visible(False)
     plt.gca().spines['bottom'].set_visible(False)
 
-    for l_pos in x_left_pos:
+    for l_pos in x_left_pos:  # little dividers between x labels
         plt.bar(l_pos, -scale_y + 10, width=0.2, color='#cccccc', linewidth=0)
+    plt.bar(scale_x, -scale_y + 10, width=0.2,
+            color='#cccccc', linewidth=0)  # divider at the end
 
     ax.set_xlim(0, scale_x)
     ax.set_ylim(-scale_y, scale_y + 70)
@@ -279,7 +281,6 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
     size_factual_class = mpl.textpath.TextPath(
         (0, 0), class_0_name).get_extents().width * 0.002
     plt.text(0.48 - size_factual_class - max([len(f) for f in text_features])*0.0001,
-
              len(text_features) - 0.9 + len(text_features)*0.04, class_0_name, color='#ff0055D2', fontweight='bold')
     plt.text(0.49, len(text_features) - 0.9 + len(text_features)*0.04, f'➜',
              color='#c20000', fontweight='bold')
