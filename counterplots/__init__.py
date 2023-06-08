@@ -42,14 +42,6 @@ class CreatePlot:
         verify_binary_class(model_pred, factual)
         verify_class_names(class_names)
 
-        # Create features names if not provided
-        if feature_names is None:
-            self.feature_names = [f'Feat_idx_{i}' for i in range(len(factual))]
-
-        # Create class names if not provided
-        if class_names is None:
-            self.class_names = {0: 'Class 0', 1: 'Class 1'}
-
         # Adapt model and class names
         self.adapted_model, self.class_names = create_adapted_model_and_class(
             factual=factual,
