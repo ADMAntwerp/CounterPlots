@@ -30,8 +30,11 @@ def verify_model_prediction(model_pred, factual):
 
 
 def verify_binary_class(model_pred, factual):
-    if len(model_pred(np.array([factual])).shape) in [1, 2]:
-        if model_pred(np.array([factual])).shape[1] > 2:
+    model_pred_shape = model_pred(np.array([factual])).shape
+    if len(model_pred_shape) == 1:
+        return
+    elif len(model_pred_shape) == 2:
+        if model_pred_shape[1] > 2:
             raise ValueError('Model must be binary.')
     else:
         raise ValueError('Model must be binary.')
