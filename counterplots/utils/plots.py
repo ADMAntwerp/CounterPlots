@@ -105,8 +105,6 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
 
         return Path(verts, codes)
 
-    # Bar for feature names and feature changes / Removed
-    # plt.bar(0, -scale_y + 10, width=200, color='#ebebeb', linewidth=0)
     prev_score = factual_score
     current_x = 0
     x_left_pos = []
@@ -140,19 +138,6 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
             color='#545454',
             fontsize=fontsize)
 
-        # # Print CounterShapley values
-        # feat_cs_score = round(feat_data['score'] - prev_score, 2)
-        # feat_cs_score_text = mpl.textpath.TextPath(
-        #     (0, 0), str(feat_cs_score), size=fontsize)
-        # plt.text(
-        #     current_x + (x_size - current_x) / 2 -
-        #     feat_cs_score_text.get_extents().width * 0.1,
-        #     bar_y_height_sub,
-        #     feat_cs_score,
-        #     color='white',
-        #     fontsize=fontsize,
-        #     weight="bold")
-        # Print Percentage of CounterShapley
         feat_cs_score_percentage = round(
             (feat_data['score'] - prev_score)/sum_countershapley*100, 1)
         feat_cs_score_percentage_text = mpl.textpath.TextPath(
@@ -297,25 +282,12 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
                  linewidth=1, alpha=0.15, linestyle='dotted')
 
     for points, x_value in mulitple_points_chart:
-        # plt.plot([points[0], point_to_pred[points[0]]], [1, 1], color='blue')
-        # [x1, x2], [y1, y2]
         for origin_point in points:
             x_0 = point_to_pred[origin_point]
             x_1 = x_value
             y_0 = origin_point
             y_1 = np.mean(points)
-            # Slope-Intercept formula
-            # f = lambda x: (y_1 - y_0) / (x_1 - x_0) * x + y_0 - (x_0 * (y_1 - y_0) / (x_1 - x_0))
 
-            # angle_arrow = np.arctan((y_1-y_0)/((x_1-x_0)))
-            # cos_arrow = np.cos(angle_arrow)
-            # sin_arrow = np.sin(angle_arrow)
-
-            # # Euclidean distance between x and y
-            # dist_x_y = np.sqrt((x_1-x_0)**2 + (y_1-y_0)**2)
-
-            # print(40*cos_arrow/dist_x_y)
-            # ax.quiver((x_0+x_1)/2, (y_0+y_1)/2, cos_arrow*corr_y_dim, sin_arrow*corr_x_dim, width=0.005, color='#e0e0e0', zorder=0, pivot='tip')
             plt.plot([x_0, x_1], [y_0, y_1], color='#e0e0e0',
                      zorder=0, linewidth=1, alpha=0.5)
 
