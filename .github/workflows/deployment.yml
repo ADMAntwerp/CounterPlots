@@ -30,7 +30,7 @@ jobs:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       run: |
         pip install pytest pytest-cov
-        pytest --ignore "sample_test_script/" --cov=./
+        pytest --ignore="exp_notebooks" --cov="./counterplots"
         codecov --token=$CODECOV_TOKEN
     - name: Get current package version
       id: get_version
