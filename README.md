@@ -12,6 +12,26 @@ CounterPlots: Plotting tool for counterfactuals
 
 Counterplots is a Python package that allows you to plot counterfactuals with easy integration with any counterfactual generation algorithm.
 
+## Plot examples
+
+### Greedy Plot
+
+The greedy plot shows the greediest (feature change with the highest impact towards the opposite class) path from the factual instance until it reaches the counterfactual.
+
+<img src="https://raw.githubusercontent.com/ADMAntwerp/CounterPlots/main/_static/counterplots_example_greedy.png">
+
+### CounterShapley Plot
+
+This chart shows each counterfactual feature change contribution to the counterfactual prediction. It uses Shapley values to calculate the contribution of each feature change.
+
+<img src="https://raw.githubusercontent.com/ADMAntwerp/CounterPlots/main/_static/counterplots_example_countershapley.png">
+
+### Constellation Plot
+
+This chart shows the prediction score change for all possible feature change combinations.
+
+<img src="https://raw.githubusercontent.com/ADMAntwerp/CounterPlots/main/_static/counterplots_example_constellation.png">
+
 ## Installation
 With pip:
 ```bash
