@@ -1,3 +1,6 @@
+# 0.0.7 / 2023-06-10
+==================
+* Upgrade dependencies requirements
 # 0.0.6 / 2023-06-10
 ==================
 * Fix dependency issue

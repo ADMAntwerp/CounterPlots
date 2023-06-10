@@ -8,7 +8,7 @@ with open('LICENSE.txt') as f:
 
 setup_args = dict(
     name='counterplots',
-    version='0.0.6',
+    version='0.0.7',
     description='Plotting tool for counterfactual explanations',
     long_description_content_type='text/markdown',
     long_description=README,
@@ -21,8 +21,8 @@ setup_args = dict(
 )
 
 install_requires = [
-'numpy',
-'matplotlib'
+'numpy>=1.24.3',
+'matplotlib>=3.7.1'
 ]
 
 if __name__ == '__main__':

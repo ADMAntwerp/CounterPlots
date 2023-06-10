@@ -32,6 +32,9 @@ This chart shows the prediction score change for all possible feature change com
 
 <img src="https://raw.githubusercontent.com/ADMAntwerp/CounterPlots/main/_static/counterplots_example_constellation.png">
 
+## Requirements
+CounterPlots requires Python 3.8 or higher.
+
 ## Installation
 With pip:
 ```bash
