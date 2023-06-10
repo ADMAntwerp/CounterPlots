@@ -58,7 +58,7 @@ class TestMakeConstellationPlot(unittest.TestCase):
         mulitple_points_chart = np.array(
             [[np.array([0, 1]), 0.263131977249517],
              [np.array([0, 2]), 0.024619989978766642],
-             [np.array([1, 2]), 0.24759475995893304]])
+             [np.array([1, 2]), 0.24759475995893304]], dtype='object')
         mulitple_points_chart_y = [0.5, 1.0, 1.5]
         single_points = np.array([
             [6.00000000e+00, 5.19673099e-03],
