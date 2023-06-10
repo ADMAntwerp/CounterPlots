@@ -5,6 +5,7 @@
 CounterPlots: Plotting tool for counterfactuals
 =======================================
 
+[![PyPI Version](https://img.shields.io/pypi/v/counterplots.svg)](https://pypi.org/project/counterplots/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![example workflow](https://github.com/ADMAntwerp/CounterPlots/actions/workflows/deployment.yml/badge.svg)](https://github.com/ADMAntwerp/CounterPlots/actions)
 [![Code Coverage](https://codecov.io/gh/rmazzine/counterplotcoverage/branch/main/graph/badge.svg?token=TQYJSGEMP1)](https://codecov.io/gh/rmazzine/counterplotcoverage)
