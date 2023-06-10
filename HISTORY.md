@@ -1,3 +1,6 @@
+# 0.0.5 / 2023-06-10
+==================
+* Use the most recent packages possible
 # 0.0.4 / 2023-06-10
 ==================
 * Update dependency package versions

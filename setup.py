@@ -8,7 +8,7 @@ with open('LICENSE.txt') as f:
 
 setup_args = dict(
     name='counterplots',
-    version='0.0.4',
+    version='0.0.5',
     description='Plotting tool for counterfactual explanations',
     long_description_content_type='text/markdown',
     long_description=README,
