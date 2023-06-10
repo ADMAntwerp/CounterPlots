@@ -1,3 +1,6 @@
+# 0.0.6 / 2023-06-10
+==================
+* Fix dependency issue
 # 0.0.5 / 2023-06-10
 ==================
 * Use the most recent packages possible
