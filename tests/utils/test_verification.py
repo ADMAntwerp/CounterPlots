@@ -58,14 +58,15 @@ def test_verify_model_prediction():
 
 def test_verify_binary_class():
     factual = np.array([1, 2, 3])
-    model_pred = lambda x: np.array([1]) if np.sum(x) > 5 else np.array([0])
+    model_pred = lambda x: np.array([1]) if np.sum(x) > 5 else np.array([0]) # noqa
     verify_binary_class(model_pred, factual)  # No exception should be raised
 
-    model_pred_multiclass = lambda x: np.array([[0.1, 0.5, 0.4]])  # Multiclass prediction
+    # Multiclass prediction
+    model_pred_multiclass = lambda x: np.array([[0.1, 0.5, 0.4]])  # noqa
     with pytest.raises(ValueError):
         verify_binary_class(model_pred_multiclass, factual)
 
-    model_pred_other = lambda x: np.array([[[1]]])
+    model_pred_other = lambda x: np.array([[[1]]]) # noqa
     with pytest.raises(ValueError):
         verify_binary_class(model_pred_other, factual)
 
@@ -77,4 +78,3 @@ def test_verify_class_names():
     class_names_incorrect_type = 'Class Names'  # Incorrect type
     with pytest.raises(ValueError):
         verify_class_names(class_names_incorrect_type)
-

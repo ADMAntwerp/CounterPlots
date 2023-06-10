@@ -6,7 +6,7 @@ from counterplots.utils.process import create_adapted_model_and_class, greedy_st
 
 class TestScript(unittest.TestCase):
 
-    def setUp(self):
+    def setUp(self): # noqa
         def model(data):
             out = []
             for x in data:
@@ -30,7 +30,6 @@ class TestScript(unittest.TestCase):
         self.model = model
         self.factual = np.array([0.1, 0.2, 0.3])
         self.cf = np.array([0.4, 0.5, 0.6])
-
 
     def test_create_adapted_model_and_class(self):
         class_names = ['A', 'B']
@@ -56,7 +55,7 @@ class TestScript(unittest.TestCase):
 
     def test_create_adapted_model_and_class_double_pred(self):
         class_names = ['A', 'B']
-        model_pred = lambda data: [[1 - self.model([x])[0], self.model([x])[0]] for x in data]
+        model_pred = lambda data: [[1 - self.model([x])[0], self.model([x])[0]] for x in data] # noqa
         factual = self.factual
 
         adapted_model, adapted_class = create_adapted_model_and_class(factual, model_pred, class_names)
@@ -67,7 +66,7 @@ class TestScript(unittest.TestCase):
 
     def test_create_adapted_model_and_class_double_pred_B_A(self):
         class_names = ['A', 'B']
-        model_pred = lambda data: [[1 - self.model([x])[0], self.model([x])[0]] for x in data]
+        model_pred = lambda data: [[1 - self.model([x])[0], self.model([x])[0]] for x in data] # noqa
         factual = self.cf
 
         adapted_model, adapted_class = create_adapted_model_and_class(factual, model_pred, class_names)
@@ -106,11 +105,12 @@ class TestScript(unittest.TestCase):
     def test_generate_contribution_graph(self):
         instance1 = self.factual
         instance2 = self.cf
-        model = lambda x: np.array([0.7])
+        model = lambda x: np.array([0.7]) # noqa
         indices_feature_diff = [0, 2]
         class_of_interest_index = 0
 
-        contribution_graph = generate_contribution_graph(instance1, instance2, model, indices_feature_diff, class_of_interest_index)
+        contribution_graph = generate_contribution_graph(instance1, instance2, model, indices_feature_diff,
+                                                         class_of_interest_index)
 
         self.assertEqual(len(contribution_graph), 4)
         self.assertIn((), contribution_graph)

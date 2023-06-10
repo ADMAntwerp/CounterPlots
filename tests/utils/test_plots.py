@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import numpy as np
 
@@ -72,4 +72,3 @@ class TestMakeConstellationPlot(unittest.TestCase):
         make_constellation_plot(factual_score, single_points_chart, text_features, mulitple_points_chart,
                                 mulitple_points_chart_y, single_points, class_names, cf_score, point_to_pred,
                                 save_path)
-

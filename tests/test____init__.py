@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import patch
 from counterplots import CreatePlot
 
+
 class CreatePlotTests(unittest.TestCase):
 
     def setUp(self):
@@ -56,7 +57,6 @@ class CreatePlotTests(unittest.TestCase):
 
         create_plot = CreatePlot(self.factual, self.cf, self.model_pred, self.feature_names, self.class_names)
         create_plot.countershapley(save_path=None)  # Just check if it runs without error
-
 
     @patch('counterplots.calc_shapley_values_between')
     def test_countershapley_values(self, mock_calc_shapley_values_between):

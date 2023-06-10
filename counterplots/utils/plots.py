@@ -6,7 +6,7 @@ import matplotlib.patches as patches
 
 
 def make_greedy_plot(factual_score, features_data, class_names, save_path):
-    fig = plt.figure(figsize=(7, 1 * len(features_data)))
+    fig = plt.figure(figsize=(7, 1 * len(features_data))) # noqa
 
     scatter_points = [f['score'] for f in features_data]
     scatter_points.insert(0, factual_score)
@@ -51,9 +51,10 @@ def make_greedy_plot(factual_score, features_data, class_names, save_path):
     class_1_name = list(class_names.values())[1]
     size_factual_class = mpl.textpath.TextPath(
         (0, 0), class_0_name).get_extents().width * 0.003
-    plt.text(0.47 - size_factual_class - max([len(f) for f in features_names])*0.0001, len(features_names) - 0.75 + (len(features_names) + 1)*0.04,
+    plt.text(0.47 - size_factual_class - max([len(f) for f in features_names])*0.0001, len(features_names)
+             - 0.75 + (len(features_names) + 1)*0.04,
              class_0_name, color='#ff0055D2', fontweight='bold')
-    plt.text(0.49, len(features_names) - 0.75 + (len(features_names) + 1)*0.04, f'➜',
+    plt.text(0.49, len(features_names) - 0.75 + (len(features_names) + 1)*0.04, '➜',
              color='#c20000', fontweight='bold')
     plt.text(0.52, len(features_names) - 0.75 + (len(features_names) + 1)
              * 0.04, class_1_name, color='#008ae7D2', fontweight='bold')
@@ -209,9 +210,6 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
     fig = plt.figure(figsize=(x_dim, y_dim))
     ax = fig.add_subplot(111)
 
-    corr_x_dim = (x_lim_high - y_lim_low) / x_dim
-    corr_y_dim = (y_lim_high - y_lim_low) / y_dim
-
     ax.set_xlim(x_lim_low, x_lim_high)
     ax.set_ylim(y_lim_low, y_lim_high)
 
@@ -267,7 +265,7 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
         (0, 0), class_0_name).get_extents().width * 0.002
     plt.text(0.48 - size_factual_class - max([len(f) for f in text_features])*0.0001,
              len(text_features) - 0.9 + len(text_features)*0.04, class_0_name, color='#ff0055D2', fontweight='bold')
-    plt.text(0.49, len(text_features) - 0.9 + len(text_features)*0.04, f'➜',
+    plt.text(0.49, len(text_features) - 0.9 + len(text_features)*0.04, '➜',
              color='#c20000', fontweight='bold')
     plt.text(0.51, len(text_features) - 0.9 + len(text_features)*0.04,
              class_1_name, color='#008ae7D2', fontweight='bold')

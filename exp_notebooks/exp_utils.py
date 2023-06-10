@@ -73,7 +73,7 @@ class lime_explainer:
         exp = self.explainer.explain_instance(
             factual, self.model, num_features=len(factual))
         results = exp
-        results_lv_idx = {l[0]: l[1] for l in results.as_map()[1]}
+        results_lv_idx = {feat[0]: feat[1] for feat in results.as_map()[1]}
         results_per_idx = {idx: results_lv_idx[idx]
                            for idx in range(len(factual))}
         return results, results_per_idx

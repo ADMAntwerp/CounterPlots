@@ -62,9 +62,6 @@ def greedy_strategy(factual, cf, adapted_model, feature_names):
         best_factual_feature_value = factual[best_feature]
         best_cf_feature_value = cf[best_feature]
 
-        factual_value_type = type(best_factual_feature_value)
-        counterfactual_value_type = type(best_cf_feature_value)
-
         current_factual = modified_factuals[np.argmax(modified_factuals_pred)]
 
         # Adjust text of modification values

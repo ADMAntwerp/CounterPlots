@@ -1,5 +1,6 @@
 import numpy as np
 
+
 # Verifications
 def verify_shape(array):
     if len(np.array(array).shape) != 1:
