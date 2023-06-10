@@ -32,15 +32,29 @@ jobs:
         pip install pytest pytest-cov
         pytest --ignore "sample_test_script/" --cov=./
         codecov --token=$CODECOV_TOKEN
-    - name: Install building and publishing dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install twine
+    - name: Get current package version
+      id: get_version
+      run: echo "::set-output name=version::$(python setup.py --version)"
 
-    - name: Build and publish package
+    - name: Compare package versions
+      id: compare_versions
+      run: |
+        pip install counterplots
+        if [[ "$(python -m pip show counterplots | grep Version | awk '{print $2}')" == "${{ steps.get_version.outputs.version }}" ]]; then
+          echo "Versions match. No upload needed."
+          echo "::set-output name=upload_required::false"
+        else
+          echo "Versions differ. Uploading package..."
+          echo "::set-output name=upload_required::true"
+        fi
+        pip uninstall counterplots -y
+    - name: Upload to PyPI
+      if: steps.compare_versions.outputs.upload_required == 'true'
       env:
         TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
       run: |
+        python -m pip install --upgrade pip
+        pip install twine
         python setup.py sdist
         twine upload dist/*

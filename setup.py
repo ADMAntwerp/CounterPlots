@@ -6,17 +6,14 @@ with open('README.md') as f:
 with open('LICENSE.txt') as f:
     LICENSE = f.read()
 
-with open('HISTORY.md') as f:
-    HISTORY = f.read()
-
 setup_args = dict(
     name='counterplots',
     version='0.0.2',
     description='Plotting tool for counterfactual explanations',
     long_description_content_type='text/markdown',
-    long_description=README + '\n\n' + HISTORY,
+    long_description=README,
     license='MIT',
-    packages=find_packages(exclude=('tests', 'exp_notebooks', '_static')),
+    packages=find_packages(exclude=('tests\*', 'exp_notebooks\*', '_static\*')),
     author='Raphael Mazzine Barbosa de Oliveira, Bjorge Meulemeester',
     keywords=['Counterfactual Explanations', 'Visualization', 'Plotting', 'Explainable Artificial Intelligence', 'XAI', 'Machine Learning'],
     url='https://github.com/ADMAntwerp/CounterPlots',
