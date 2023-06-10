@@ -11,7 +11,7 @@ with open('HISTORY.md') as f:
 
 setup_args = dict(
     name='counterplots',
-    version='0.0.1',
+    version='0.0.2',
     description='Plotting tool for counterfactual explanations',
     long_description_content_type='text/markdown',
     long_description=README + '\n\n' + HISTORY,
