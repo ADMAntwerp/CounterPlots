@@ -1,3 +1,6 @@
+# 0.0.4 / 2023-06-10
+==================
+* Update dependency package versions
 # 0.0.3 / 2023-06-10
 ==================
 * Fix installation issue
