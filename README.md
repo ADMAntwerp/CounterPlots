@@ -162,4 +162,12 @@ print(cf_plots.countershapley_values())
 ## Citation
 If you use CounterPlots in your research, please cite the following paper:
 ```bibtex
+@misc{meulemeester2023calculating,
+      title={Calculating and Visualizing Counterfactual Feature Importance Values}, 
+      author={Bjorge Meulemeester and Raphael Mazzine Barbosa De Oliveira and David Martens},
+      year={2023},
+      eprint={2306.06506},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
 ```
