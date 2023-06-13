@@ -13,6 +13,9 @@ CounterPlots: Plotting tool for counterfactuals
 
 Counterplots is a Python package that allows you to plot counterfactuals with easy integration with any counterfactual generation algorithm.
 
+[Medium Post](https://medium.com/@mazzine/measuring-counterfactual-explanations-feature-importance-with-counterplots-41359bc85aea)
+[Preprint Article](https://arxiv.org/abs/2306.06506)
+
 ## Plot examples
 
 ### Greedy Plot
