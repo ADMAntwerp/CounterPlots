@@ -1,8 +1,8 @@
-<img src="_static/counterplots_logo.svg"><br>
+<img src="https://github.com/ADMAntwerp/CounterPlots/blob/main/_static/counterplots_logo.svg"><br>
 
 --------------------------------------
 
-CounterPlots: Plotting tool for counterfactuals
+CounterPlots: Plotting tool for counterfactual explanations
 =======================================
 
 [![PyPI Version](https://img.shields.io/pypi/v/counterplots.svg)](https://pypi.org/project/counterplots/)
@@ -23,19 +23,19 @@ Counterplots is a Python package that allows you to plot counterfactuals with ea
 
 The greedy plot shows the greediest (feature change with the highest impact towards the opposite class) path from the factual instance until it reaches the counterfactual.
 
-<img src="_static/counterplots_example_greedy.png">
+<img src="https://github.com/ADMAntwerp/CounterPlots/blob/main/_static/counterplots_example_greedy.png">
 
 ### CounterShapley Plot
 
 This chart shows each counterfactual feature change contribution to the counterfactual prediction. It uses Shapley values to calculate the contribution of each feature change.
 
-<img src="_static/counterplots_example_countershapley.png">
+<img src="https://github.com/ADMAntwerp/CounterPlots/blob/main/_static/counterplots_example_countershapley.png">
 
 ### Constellation Plot
 
 This chart shows the prediction score change for all possible feature change combinations.
 
-<img src="_static/counterplots_example_constellation.png">
+<img src="https://github.com/ADMAntwerp/CounterPlots/blob/main/_static/counterplots_example_constellation.png">
 
 ## Requirements
 CounterPlots requires Python 3.8 or higher.
