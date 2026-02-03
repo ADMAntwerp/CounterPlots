@@ -127,16 +127,17 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
     cf_score = features_data[-1]['score']
     sum_countershapley = cf_score - factual_score
 
-    # Beak must be always the 4%
     def create_bar(start_x, end_x, no_beak=False):
-
+        width = end_x - start_x
+        direction = 1 if width >= 0 else -1
+        beak_size = min(4, abs(.2*width))
         verts = [
-            (start_x, 0.),  # left, bottom
-            (start_x, bar_y_height),  # left, top
-            (end_x - 4, bar_y_height),  # right, top
-            (end_x, bar_y_height),  # right, top
-            (end_x, 0.),  # right, bottom
-            (0., 0.),  # ignored
+            (start_x, 0.),                    # inner bottom
+            (start_x,                       direction * bar_y_height),  # inner top
+            (end_x - direction * beak_size, direction * bar_y_height),  # before beak
+            (end_x,                         direction * bar_y_height),  # beak tip (control point)
+            (end_x, 0.),                    # outer bottom
+            (0., 0.),                       # ignored
         ]
 
         codes = [
@@ -151,11 +152,26 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
         return Path(verts, codes)
 
     prev_score = factual_score
-    current_x = 0
+    current_x_pos = 0
+    current_x_neg = 0
     x_left_pos = []
-    for _, feat_data in enumerate(features_data):
+    for i, feat_data in enumerate(features_data):
+
+        cshap_score = feat_data['x']
+        if cshap_score > 0: current_x, yscale = current_x_pos, 1
+        else: current_x, yscale = current_x_neg, -1
+
         x_left_pos.append(current_x)
-        x_size = feat_data['x'] * 100 / scale_x + current_x
+        x_end = current_x + cshap_score * 100 / scale_x
+
+
+        # Plot bar
+        ax.add_patch(
+            patches.PathPatch(
+                create_bar(start_x=current_x, end_x=x_end), 
+                facecolor=color_bar, 
+                lw=0)
+            )
 
         # Plot text for feature name
         feature_change_text = f"{feat_data['name']}\n{feat_data['factual']}➜{feat_data['counterfactual']}"
@@ -197,28 +213,27 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
             fontsize=fontsize,
             weight="bold")
 
-        current_x = x_size
+        if cshap_score > 0: current_x_pos = x_end
+        else: current_x_neg = x_end
+        
         prev_score = feat_data['score']
 
-    # Print CF score
+
+
+    # Draw bar for the factual score
+    plt.bar(0, scale_y - 10, width=0.5, color=PINK1, linewidth=1)
+    plt.text(-5, scale_y + fontsize * 4, 'Factual Score', color=PINK1, fontsize=fontsize)
+    plt.text(0, scale_y, factual_score, color=PINK1, fontsize=fontsize)
+
+    # Plot bar for the counterfactual score
+    plt.bar(current_x_pos, scale_y - 10, width=0.5, color=BLUE1, linewidth=1)
+    plt.text(current_x_pos - 10, scale_y + fontsize * 4, 'Counterfactual Score', color=BLUE1, fontsize=fontsize)
     plt.text(
-        current_x,
+        current_x_pos,
         scale_y,
         round(features_data[-1]['score'], 2),
         color=BLUE1,
         fontsize=fontsize)
-
-    # Draw bar for the factual score
-    plt.bar(0, scale_y - 10, width=0.5, color=PINK1, linewidth=1)
-    plt.text(-5, scale_y + fontsize * 4, 'Factual Score',
-             color=PINK1, fontsize=fontsize)
-    plt.text(0, scale_y, factual_score, color=PINK1,
-             fontsize=fontsize)
-
-    # Plot bar for the counterfactual score
-    plt.bar(current_x, scale_y - 10, width=0.5, color=BLUE1, linewidth=1)
-    plt.text(current_x - 10, scale_y + fontsize * 4,
-             'Counterfactual Score', color=BLUE1, fontsize=fontsize)
 
     # Remove y axis
     plt.gca().axes.get_yaxis().set_visible(False)
@@ -231,10 +246,9 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
 
     for l_pos in x_left_pos:  # little dividers between x labels
         plt.bar(l_pos, -scale_y + 10, width=0.2, color='#cccccc', linewidth=0)
-    plt.bar(scale_x, -scale_y + 10, width=0.2,
-            color='#cccccc', linewidth=0)  # divider at the end
+    plt.bar(current_x_pos, -scale_y + 10, width=0.2, color='#cccccc', linewidth=0)  # divider at the end
 
-    ax.set_xlim(0, scale_x)
+    ax.set_xlim(current_x_neg, current_x_pos+.5)
     ax.set_ylim(-scale_y, scale_y + 70)
 
     if save_path is not None:
