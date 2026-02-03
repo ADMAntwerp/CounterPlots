@@ -2,6 +2,7 @@ import numpy as np
 import unittest
 from unittest.mock import patch
 from counterplots import CreatePlot
+import matplotlib.pyplot as plt
 
 
 class CreatePlotTests(unittest.TestCase):
@@ -41,22 +42,19 @@ class CreatePlotTests(unittest.TestCase):
         self.assertEqual(create_plot.factual_score, 0)
         self.assertEqual(create_plot.cf_score, 1)
 
-    @patch('counterplots.make_greedy_plot')
-    @patch('counterplots.greedy_strategy')
-    def test_greedy(self, mock_greedy_strategy, mock_make_greedy_plot):
+    def test_greedy(self):
         create_plot = CreatePlot(self.factual, self.cf, self.model_pred, self.feature_names, self.class_names)
-        create_plot.greedy(save_path=None)  # Just check if it runs without error
+        fig, ax = create_plot.greedy(save_path=None)
+        plt.close(fig)
 
-    @patch('counterplots.make_countershapley_plot')
     @patch('counterplots._convert_legendvalue')
     @patch('counterplots.calc_shapley_values_between')
-    def test_countershapley(self, mock_calc_shapley_values_between, mock__convert_legendvalue,
-                            mock_make_countershapley_plot):
-
+    def test_countershapley(self, mock_calc_shapley_values_between, mock__convert_legendvalue):
         mock_calc_shapley_values_between.return_value = ((0.4, 0.2, 0.1), (0, 1, 2))
 
         create_plot = CreatePlot(self.factual, self.cf, self.model_pred, self.feature_names, self.class_names)
-        create_plot.countershapley(save_path=None)  # Just check if it runs without error
+        fig, ax = create_plot.countershapley(save_path=None)
+        plt.close(fig)
 
     @patch('counterplots.calc_shapley_values_between')
     def test_countershapley_values(self, mock_calc_shapley_values_between):
@@ -70,10 +68,10 @@ class CreatePlotTests(unittest.TestCase):
         }
         self.assertEqual(values, expected_values)
 
-    @patch('counterplots.make_constellation_plot')
-    def test_constellation(self, mock_make_constellation_plot):
+    def test_constellation(self):
         create_plot = CreatePlot(self.factual, self.cf, self.model_pred, self.feature_names, self.class_names)
-        create_plot.constellation(save_path=None)  # Just check if it runs without error
+        fig, ax = create_plot.constellation(save_path=None)
+        plt.close(fig)
 
     @patch('counterplots.make_constellation_plot')
     @patch('counterplots.CreatePlot.greedy')
