@@ -97,6 +97,8 @@ def make_greedy_plot(factual_score, features_data, class_names, save_path):
 
     if save_path:
         plt.savefig(save_path, bbox_inches='tight')
+    
+    return fig, fig.gca()
 
 
 def make_countershapley_plot(factual_score, features_data, classes, save_path):
@@ -254,7 +256,7 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
     if save_path is not None:
         plt.savefig(save_path, bbox_inches='tight')
 
-    plt.show()
+    return fig, ax
 
 
 def make_constellation_plot(
@@ -397,3 +399,5 @@ def make_constellation_plot(
 
     if save_path is not None:
         plt.savefig(save_path, bbox_inches='tight')
+
+    return fig, ax

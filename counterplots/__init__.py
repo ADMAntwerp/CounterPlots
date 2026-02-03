@@ -61,11 +61,12 @@ class CreatePlot:
             feature_names=self.feature_names)
 
         # Plot the greedy search
-        make_greedy_plot(
+        fig, ax = make_greedy_plot(
             factual_score=self.factual_score,
             features_data=features_data,
             class_names=self.class_names,
             save_path=save_path)
+        return fig, ax
 
     def countershapley(self, save_path: str = None):
 
@@ -99,8 +100,10 @@ class CreatePlot:
                 'counterfactual': counterfactual_value})
 
         # Plot the countershapley values
-        make_countershapley_plot(
+        fig, ax = make_countershapley_plot(
             self.factual_score, features_data, self.class_names, save_path)
+
+        return fig, ax
 
     def countershapley_values(self):
         feat_contributions, feat_modified = calc_shapley_values_between(
@@ -193,7 +196,7 @@ class CreatePlot:
         # Multiple points y axis (0 index of mulitple_points_chart) must be the mean of the point values
         mulitple_points_chart_y = [np.mean(fp) for fp, _ in mulitple_points_chart]
 
-        make_constellation_plot(
+        fig, ax = make_constellation_plot(
             factual_score=self.factual_score,
             single_points_chart=single_points_chart,
             text_features=text_features,
@@ -205,4 +208,6 @@ class CreatePlot:
             point_to_pred=point_to_pred,
             save_path=save_path,
             highlight_feature=highlight_feature
-            )
+        )
+
+        return fig, ax
