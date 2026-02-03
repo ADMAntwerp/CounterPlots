@@ -12,6 +12,23 @@ BLUE_TR = "#008ae7D2"
 DARK_GREY = "#545454" 
 LIGHT_GREY = "#e0e0e0" 
 
+
+def _get_text_width_in_data_co(text, fig, ax):
+    renderer = fig.canvas.get_renderer()
+    fig.canvas.draw()
+
+    bbox = text.get_extents()
+    x0, _ = ax.transData.inverted().transform((bbox.x0, bbox.y0))
+    x1, _ = ax.transData.inverted().transform((bbox.x1, bbox.y0))
+
+    width = x1 - x0
+    return width
+
+
+def _infer_text_orientation(text, fig, ax, w_limit):
+    if _get_text_width_in_data_co(text, fig, ax) > w_limit: return "vertical" 
+    return "horizontal"
+
 def make_greedy_plot(factual_score, features_data, class_names, save_path):
     fig = plt.figure(figsize=(7, 1 * len(features_data))) # noqa
 
@@ -83,6 +100,22 @@ def make_greedy_plot(factual_score, features_data, class_names, save_path):
 
 
 def make_countershapley_plot(factual_score, features_data, classes, save_path):
+    """
+
+    Args:
+        factual_score (float): The model score for the factual instance
+        features_data (List[Dict]): List of dictionaries, each dictionary containing info on a CounterShapley value.
+            Each dictionary must contain the keys:
+            
+            - `x`: the CounterShapley value itself
+            - 'score': the (non-greedy) model prediction score associated with this countershapley value
+            - `name`: the name of the feature
+            - `factual`: the factual value of the feature
+            - `counterfactual`: the counterfactual value of the feature
+
+        classes (unused)
+        save_path (str): A path to save the plot to
+    """
     fig = plt.figure(figsize=(10, 1.5))
     ax = fig.add_subplot(111)
     scale_x = 100
@@ -125,39 +158,40 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
         x_size = feat_data['x'] * 100 / scale_x + current_x
 
         # Plot text for feature name
+        feature_change_text = f"{feat_data['name']}\n{feat_data['factual']}➜{feat_data['counterfactual']}"
+        feat_change_textpath = mpl.textpath.TextPath((0, 0), feature_change_text, size=fontsize)
+        feat_cs_score_percentage = round((feat_data['score'] - prev_score)/sum_countershapley*100, 1)
+        feat_cs_score_percentage_text = mpl.textpath.TextPath((0, 0), f'{feat_cs_score_percentage}%', size=fontsize)
+
+        rotation = _infer_text_orientation(
+            text=feat_change_textpath, 
+            fig=fig, 
+            ax=fig.gca(), 
+            w_limit=(x_end-current_x)/scale_x)
+
+        txt_h = -40 if yscale > 0 else -40 - bar_y_height
+        if rotation == "vertical":
+            txt_h += 40  # offset "anchor" alignment
+            ha="right"
+        else: 
+            ha="center"
+
         plt.text(
-            current_x + (x_size - current_x) / 2 -
-            len(feat_data['name']) * fontsize / 10 / 2,
-            -40,
-            feat_data['name'],
-            color=DARK_GREY,
-            fontsize=fontsize)
-
-        feature_change_text = f"{feat_data['factual']}➜{feat_data['counterfactual']}"
-
-        # Plot bar up to 50% of the plot with the factual color
-        ax.add_patch(patches.PathPatch(create_bar(
-            current_x, x_size), facecolor=color_bar, lw=0))
-
-        # Plot text for feature changes
-        feat_change_text = mpl.textpath.TextPath(
-            (0, 0), feature_change_text, size=fontsize)
-        plt.text(
-            current_x + (x_size - current_x)/2 -
-            feat_change_text.get_extents().width * 0.1,
-            -80,
+            current_x + (x_end - current_x)/2,
+            txt_h,
             feature_change_text,
             color=DARK_GREY,
-            fontsize=fontsize)
-
-        feat_cs_score_percentage = round(
-            (feat_data['score'] - prev_score)/sum_countershapley*100, 1)
-        feat_cs_score_percentage_text = mpl.textpath.TextPath(
-            (0, 0), f'{feat_cs_score_percentage}%', size=fontsize)
+            fontsize=fontsize,
+            ha=ha,
+            va="center",
+            rotation=rotation,
+            rotation_mode="anchor"  # first align, then rotate
+        )
+        text_y_height = bar_y_height_sub if yscale > 0 else - bar_y_height + bar_y_height_sub
         plt.text(
-            current_x + (x_size - current_x) / 2 -
+            current_x + (x_end - current_x) / 2 -
             feat_cs_score_percentage_text.get_extents().width * 0.085,
-            bar_y_height_sub,
+            text_y_height,
             f'{feat_cs_score_percentage}%',
             color='white',
             fontsize=fontsize,
