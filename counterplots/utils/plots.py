@@ -4,6 +4,13 @@ import matplotlib.pyplot as plt
 from matplotlib.path import Path
 import matplotlib.patches as patches
 
+PINK1 = "#ff0055"
+PINK1_TR = "#ff0055D2"
+RED1 = "#c20000"
+BLUE1 = "#008ae7"
+BLUE_TR = "#008ae7D2"
+DARK_GREY = "#545454" 
+LIGHT_GREY = "#e0e0e0" 
 
 def make_greedy_plot(factual_score, features_data, class_names, save_path):
     fig = plt.figure(figsize=(7, 1 * len(features_data))) # noqa
@@ -11,40 +18,44 @@ def make_greedy_plot(factual_score, features_data, class_names, save_path):
     scatter_points = [f['score'] for f in features_data]
     scatter_points.insert(0, factual_score)
 
-    plt.plot(scatter_points, range(len(scatter_points)),
-             color='#c4c4c4', linestyle='dashed', zorder=0)
+    plt.plot(
+        scatter_points, 
+        range(len(scatter_points)),
+        color='#c4c4c4', 
+        linestyle='dashed', 
+        zorder=0
+        )
     for c_idx, point in enumerate(scatter_points):
         plt.scatter(
             [point],
             [c_idx],
-            color='#ff0055D2' if point < 0.5 else '#008ae7D2',
+            color=PINK1_TR if point < 0.5 else BLUE_TR,
             s=100)
 
     features_names = ['Factual']
     for feat_idx, f in enumerate(features_data):
         features_names.append(
             f'{f["name"]} ({f["factual"]}➜{f["counterfactual"]})')
-    max_feat_names_length = max([len(feat_name)
-                                for feat_name in features_names])
+    max_feat_names_length = max([len(feat_name) for feat_name in features_names])
 
     # Plot a vertical line at the threshold score
-    plt.axvline(x=0.5, color='#c20000', zorder=0, linewidth=0.5)
+    plt.axvline(x=0.5, color=RED1, zorder=0, linewidth=0.5)
 
     # Plot a vertical line at the factual score
-    plt.axvline(x=factual_score, color='#ff0055D2',
+    plt.axvline(x=factual_score, color=PINK1_TR,
                 linestyle='dashed', zorder=0)
     plt.text(factual_score - 0.088, len(features_names)*1.04 -
-             0.9, 'Factual Score', color='#ff0055D2')
+             0.9, 'Factual Score', color=PINK1_TR)
 
     # Plot a vertical line at the counterfactual score
     plt.axvline(x=scatter_points[-1],
-                color='#008ae7D2', linestyle='dashed', zorder=0)
+                color=BLUE_TR, linestyle='dashed', zorder=0)
     plt.text(scatter_points[-1] - 0.15, len(features_names)*1.04 -
-             0.9, 'Counterfactual Score', color='#008ae7D2')
+             0.9, 'Counterfactual Score', color=BLUE_TR)
 
     for feat_idx, feat_name in enumerate(features_names):
         plt.text(-0.02 * max_feat_names_length, feat_idx,
-                 feat_name, color='#545454', fontsize=12)
+                 feat_name, color=DARK_GREY, fontsize=12)
 
     # Print binary class
     class_0_name = list(class_names.values())[0]
@@ -53,11 +64,11 @@ def make_greedy_plot(factual_score, features_data, class_names, save_path):
         (0, 0), class_0_name).get_extents().width * 0.003
     plt.text(0.47 - size_factual_class - max([len(f) for f in features_names])*0.0001, len(features_names)
              - 0.75 + (len(features_names) + 1)*0.04,
-             class_0_name, color='#ff0055D2', fontweight='bold')
+             class_0_name, color=PINK1_TR, fontweight='bold')
     plt.text(0.49, len(features_names) - 0.75 + (len(features_names) + 1)*0.04, '➜',
-             color='#c20000', fontweight='bold')
+             color=RED1, fontweight='bold')
     plt.text(0.52, len(features_names) - 0.75 + (len(features_names) + 1)
-             * 0.04, class_1_name, color='#008ae7D2', fontweight='bold')
+             * 0.04, class_1_name, color=BLUE_TR, fontweight='bold')
 
     plt.gca().axes.get_yaxis().set_visible(False)
     plt.gca().spines['top'].set_visible(False)
@@ -119,7 +130,7 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
             len(feat_data['name']) * fontsize / 10 / 2,
             -40,
             feat_data['name'],
-            color='#545454',
+            color=DARK_GREY,
             fontsize=fontsize)
 
         feature_change_text = f"{feat_data['factual']}➜{feat_data['counterfactual']}"
@@ -136,7 +147,7 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
             feat_change_text.get_extents().width * 0.1,
             -80,
             feature_change_text,
-            color='#545454',
+            color=DARK_GREY,
             fontsize=fontsize)
 
         feat_cs_score_percentage = round(
@@ -160,20 +171,20 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
         current_x,
         scale_y,
         round(features_data[-1]['score'], 2),
-        color='#008ae7',
+        color=BLUE1,
         fontsize=fontsize)
 
     # Draw bar for the factual score
-    plt.bar(0, scale_y - 10, width=0.5, color='#ff0055', linewidth=1)
+    plt.bar(0, scale_y - 10, width=0.5, color=PINK1, linewidth=1)
     plt.text(-5, scale_y + fontsize * 4, 'Factual Score',
-             color='#ff0055', fontsize=fontsize)
-    plt.text(0, scale_y, factual_score, color='#ff0055',
+             color=PINK1, fontsize=fontsize)
+    plt.text(0, scale_y, factual_score, color=PINK1,
              fontsize=fontsize)
 
     # Plot bar for the counterfactual score
-    plt.bar(current_x, scale_y - 10, width=0.5, color='#008ae7', linewidth=1)
+    plt.bar(current_x, scale_y - 10, width=0.5, color=BLUE1, linewidth=1)
     plt.text(current_x - 10, scale_y + fontsize * 4,
-             'Counterfactual Score', color='#008ae7', fontsize=fontsize)
+             'Counterfactual Score', color=BLUE1, fontsize=fontsize)
 
     # Remove y axis
     plt.gca().axes.get_yaxis().set_visible(False)
@@ -198,8 +209,20 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
     plt.show()
 
 
-def make_constellation_plot(factual_score, single_points_chart, text_features, mulitple_points_chart,
-                            mulitple_points_chart_y, single_points, class_names, cf_score, point_to_pred, save_path):
+def make_constellation_plot(
+    factual_score, 
+    single_points_chart, 
+    text_features, 
+    mulitple_points_chart,
+    mulitple_points_chart_y, 
+    single_points, 
+    class_names, 
+    cf_score, 
+    point_to_pred, 
+    save_path,
+    highlight_feature=None
+    ):
+    if highlight_feature is not None: assert isinstance(highlight_feature, int), "Please pass a feature index (int) for the keyword `highlight`"
     x_dim = 10
     y_dim = 4
     y_lim_low = -0.1
@@ -215,43 +238,66 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
 
     # Plot single change points
     for idx_p, p in enumerate(single_points_chart):
-        plt.scatter([p[1]], [p[0]], color='#008ae7D2' if p[1]
-                    >= 0.5 else '#ff0055D2', s=100)
+        adapted_feat_ind, score = p
+        color = BLUE_TR if score >= 0.5 else PINK1_TR
+        if highlight_feature is not None and highlight_feature != adapted_feat_ind: color=LIGHT_GREY
+        plt.scatter(
+            [score], 
+            [adapted_feat_ind], 
+            color=color, 
+            s=100
+            )
 
     # Plot feature names and value changes
     max_text_features = max([len(f) for f in text_features])
     for i in range(len(text_features)):
-        plt.text(-0.012*max_text_features, i,
-                 text_features[i], color='#545454', fontsize=12)
+        plt.text(
+            -0.012*max_text_features, 
+            i,
+            text_features[i], 
+            color=DARK_GREY, 
+            fontsize=12
+            )
 
     # Verify if there are multiple change points
     if len(mulitple_points_chart) > 0:
-        # Plot multiple change points
-        plt.scatter(mulitple_points_chart[:, 1],
-                    mulitple_points_chart_y,
-                    color=['#E0423A' if s <
-                           0.5 else 'blue' for s in mulitple_points_chart[:, 1]],
-                    s=10)
+        adapted_feat_inds_per_point = mulitple_points_chart[:, 0]  # average height ~ average adapted feat inds.
+        scores = mulitple_points_chart[:, 1]
+        colors = [
+            '#E0423A' if s < 0.5 and (highlight_feature is None or highlight_feature in f_ind)
+            else LIGHT_GREY if s < 0.5 and highlight_feature not in f_ind
+            else 'blue' 
+            for s, f_ind in zip(scores, adapted_feat_inds_per_point)
+        ]
+        plt.scatter(
+            scores,
+            mulitple_points_chart_y,
+            color=colors,
+            s=10
+        )
 
     # Plot counterfactual point
     cf_pred_x_1 = np.mean([*range(len(single_points))])
-    plt.scatter([cf_score], [cf_pred_x_1], color='#008ae7D2' if cf_score
-                >= 0.5 else '#ff0055D2', s=100)
+    plt.scatter(
+        [cf_score], 
+        [cf_pred_x_1], 
+        color=BLUE_TR if cf_score >= 0.5 else PINK1_TR, 
+        s=100)
 
     # Plot a vertical line at the threshold
-    plt.axvline(x=0.5, color='#c20000', zorder=0, linewidth=0.5)
+    plt.axvline(x=0.5, color=RED1, zorder=0, linewidth=0.5)
 
     # Plot a vertical line at the factual score
-    plt.axvline(x=factual_score, color='#ff0055D2',
+    plt.axvline(x=factual_score, color=PINK1_TR,
                 linestyle='dashed', zorder=0)
     plt.text(factual_score - 0.06, len(text_features) *
-             1.01 - 0.9, 'Factual Score', color='#ff0055D2')
+             1.01 - 0.9, 'Factual Score', color=PINK1_TR)
 
     # Plot a vertical line at the counterfactual score
-    plt.axvline(x=cf_score, color='#008ae7D2',
+    plt.axvline(x=cf_score, color=BLUE_TR,
                 linestyle='dashed', zorder=0)
     plt.text(cf_score - 0.10, len(text_features)*1.01 - 0.9,
-             'Counterfactual Score', color='#008ae7D2')
+             'Counterfactual Score', color=BLUE_TR)
 
     plt.gca().axes.get_yaxis().set_visible(False)
     plt.gca().spines['top'].set_visible(False)
@@ -264,11 +310,11 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
     size_factual_class = mpl.textpath.TextPath(
         (0, 0), class_0_name).get_extents().width * 0.002
     plt.text(0.48 - size_factual_class - max([len(f) for f in text_features])*0.0001,
-             len(text_features) - 0.9 + len(text_features)*0.04, class_0_name, color='#ff0055D2', fontweight='bold')
+             len(text_features) - 0.9 + len(text_features)*0.04, class_0_name, color=PINK1_TR, fontweight='bold')
     plt.text(0.49, len(text_features) - 0.9 + len(text_features)*0.04, '➜',
-             color='#c20000', fontweight='bold')
+             color=RED1, fontweight='bold')
     plt.text(0.51, len(text_features) - 0.9 + len(text_features)*0.04,
-             class_1_name, color='#008ae7D2', fontweight='bold')
+             class_1_name, color=BLUE_TR, fontweight='bold')
 
     # Plot Counterfactual lines
     for i in range(len(single_points)):
@@ -276,8 +322,14 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
         x_1 = cf_score
         y_0 = i
         y_1 = cf_pred_x_1
-        plt.plot([x_0, x_1], [y_0, y_1], color='k', zorder=0,
-                 linewidth=1, alpha=0.15, linestyle='dotted')
+        plt.plot(
+            [x_0, x_1], 
+            [y_0, y_1], 
+            color='k', 
+            zorder=0,
+            linewidth=1, 
+            alpha=0.15, 
+            linestyle='dotted')
 
     for points, x_value in mulitple_points_chart:
         for origin_point in points:
@@ -286,8 +338,14 @@ def make_constellation_plot(factual_score, single_points_chart, text_features, m
             y_0 = origin_point
             y_1 = np.mean(points)
 
-            plt.plot([x_0, x_1], [y_0, y_1], color='#e0e0e0',
-                     zorder=0, linewidth=1, alpha=0.5)
+            plt.plot(
+                [x_0, x_1], 
+                [y_0, y_1], 
+                color='#e0e0e0',
+                zorder=0, 
+                linewidth=1, 
+                alpha=0.5
+                )
 
     if save_path is not None:
         plt.savefig(save_path, bbox_inches='tight')
