@@ -368,6 +368,7 @@ def make_constellation_plot(
 
     # Plot Counterfactual lines
     for i in range(len(single_points)):
+        if highlight_feature is not None and i != highlight_feature: continue
         x_0 = point_to_pred[i]
         x_1 = cf_score
         y_0 = i
@@ -383,6 +384,7 @@ def make_constellation_plot(
 
     for points, x_value in mulitple_points_chart:
         for origin_point in points:
+            if highlight_feature is not None and origin_point != highlight_feature: continue
             x_0 = point_to_pred[origin_point]
             x_1 = x_value
             y_0 = origin_point
