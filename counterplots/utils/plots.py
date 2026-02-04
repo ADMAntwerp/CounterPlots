@@ -313,12 +313,17 @@ def make_constellation_plot(
     if len(mulitple_points_chart) > 0:
         adapted_feat_inds_per_point = mulitple_points_chart[:, 0]  # average height ~ average adapted feat inds.
         scores = mulitple_points_chart[:, 1]
-        colors = [
-            '#E0423A' if s < 0.5 and (highlight_feature is None or highlight_feature in f_ind)
-            else LIGHT_GREY if s < 0.5 and highlight_feature not in f_ind
-            else 'blue' 
-            for s, f_ind in zip(scores, adapted_feat_inds_per_point)
-        ]
+        if highlight_feature is None:
+            # No specific feature highlighted: keep original sign-based coloring
+            colors = ['#E0423A' if s < 0.5 else 'blue' for s in scores]
+        else:
+            # When highlighting a feature, de-emphasize all coalitions that do not contain it
+            colors = [
+                '#E0423A' if s < 0.5 and highlight_feature in f_ind
+                else 'blue' if s >= 0.5 and highlight_feature in f_ind
+                else LIGHT_GREY
+                for s, f_ind in zip(scores, adapted_feat_inds_per_point)
+            ]
         plt.scatter(
             scores,
             mulitple_points_chart_y,
