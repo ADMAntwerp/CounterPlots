@@ -270,9 +270,58 @@ def make_constellation_plot(
     cf_score, 
     point_to_pred, 
     save_path,
-    highlight_feature=None
+    highlight_changed_feature=None
     ):
-    if highlight_feature is not None: assert isinstance(highlight_feature, int), "Please pass a feature index (int) for the keyword `highlight_feature`"
+    """
+    Create a constellation plot visualizing feature change contributions.
+    
+    Args:
+        factual_score (float): The factual prediction score
+        
+        single_points_chart (np.ndarray): 2D array of shape (N, 2) mapping feature CHANGE index 
+            to prediction value for single feature changes. Each row is [feature_change_idx, score].
+            Example: array([[0., 0.154], [1., 0.187], [2., 0.214]])
+            Used to plot the larger dots representing single feature changes.
+        
+        text_features (list): List of strings with feature names and their value changes.
+            Format: "feature_name (factual_value➜counterfactual_value)"
+            Example: ["age (25➜30)", "income (50000➜60000)"]
+        
+        mulitple_points_chart (np.ndarray): Array of shape (M,) with dtype=object, where each 
+            element is [array([feature_change_indices]), score]. Maps feature CHANGE index 
+            coalitions to their prediction scores, excluding the case where ALL features are changed.
+            Example: array([[array([0, 1]), 0.334], [array([0, 2]), 0.370], [array([1, 2]), 0.429]], 
+            dtype=object)
+            Used to plot the smaller dots representing multiple simultaneous feature changes.
+        
+        mulitple_points_chart_y (list): List of y-axis positions for the multiple change points.
+            Each value is the mean of the feature change indices in the coalition.
+            Example: [0.5, 1.0, 1.5]
+        
+        single_points (np.ndarray): 2D array of shape (N, 2) mapping original feature index 
+            (NOT feature CHANGE index) to prediction values. Format: [feature_idx, score].
+            Example: array([[0., 0.154], [1., 0.187], [8., 0.214]])
+            Note: The feature index in this array is not actually used in the plotting logic.
+        
+        class_names (dict): Mapping of class indices to class names.
+            Example: {0: "Rejected", 1: "Accepted"}
+        
+        cf_score (float): Counterfactual prediction score
+        
+        point_to_pred (dict): Mapping of feature CHANGE indices to their single-change prediction scores.
+            Example: {0: 0.154, 1: 0.187, 2: 0.214}
+        
+        save_path (str, optional): Path to save the plot. If None, plot is not saved.
+        
+        highlight_changed_feature (int, optional): Index of the changed feature to highlight
+            (0 to N-1, where N is the number of features that differ between factual and
+            counterfactual). When specified, only coalitions containing this feature change
+            will be emphasized. Defaults to None (all features shown with equal emphasis).
+    
+    Returns:
+        tuple: (fig, ax) matplotlib figure and axis objects
+    """
+    if highlight_changed_feature is not None: assert isinstance(highlight_changed_feature, int), "Please pass a feature change index (int) for the keyword `highlight_changed_feature`"
     x_dim = 10
     y_dim = 4
     y_lim_low = -0.1
@@ -290,7 +339,7 @@ def make_constellation_plot(
     for idx_p, p in enumerate(single_points_chart):
         adapted_feat_ind, score = p
         color = BLUE_TR if score >= 0.5 else PINK1_TR
-        if highlight_feature is not None and highlight_feature != adapted_feat_ind: color=LIGHT_GREY
+        if highlight_changed_feature is not None and highlight_changed_feature != adapted_feat_ind: color=LIGHT_GREY
         plt.scatter(
             [score], 
             [adapted_feat_ind], 
@@ -313,14 +362,14 @@ def make_constellation_plot(
     if len(mulitple_points_chart) > 0:
         adapted_feat_inds_per_point = mulitple_points_chart[:, 0]  # average height ~ average adapted feat inds.
         scores = mulitple_points_chart[:, 1]
-        if highlight_feature is None:
+        if highlight_changed_feature is None:
             # No specific feature highlighted: keep original sign-based coloring
             colors = ['#E0423A' if s < 0.5 else 'blue' for s in scores]
         else:
             # When highlighting a feature, de-emphasize all coalitions that do not contain it
             colors = [
-                '#E0423A' if s < 0.5 and highlight_feature in f_ind
-                else 'blue' if s >= 0.5 and highlight_feature in f_ind
+                '#E0423A' if s < 0.5 and highlight_changed_feature in f_ind
+                else 'blue' if s >= 0.5 and highlight_changed_feature in f_ind
                 else LIGHT_GREY
                 for s, f_ind in zip(scores, adapted_feat_inds_per_point)
             ]
@@ -373,7 +422,7 @@ def make_constellation_plot(
 
     # Plot Counterfactual lines
     for i in range(len(single_points)):
-        if highlight_feature is not None and i != highlight_feature: continue
+        if highlight_changed_feature is not None and i != highlight_changed_feature: continue
         x_0 = point_to_pred[i]
         x_1 = cf_score
         y_0 = i
@@ -389,7 +438,7 @@ def make_constellation_plot(
 
     for points, x_value in mulitple_points_chart:
         for origin_point in points:
-            if highlight_feature is not None and origin_point != highlight_feature: continue
+            if highlight_changed_feature is not None and origin_point != highlight_changed_feature: continue
             x_0 = point_to_pred[origin_point]
             x_1 = x_value
             y_0 = origin_point

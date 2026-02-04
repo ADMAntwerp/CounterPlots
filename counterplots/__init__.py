@@ -118,7 +118,21 @@ class CreatePlot:
             'feature_indices': feat_modified
         }
 
-    def constellation(self, save_path: str = None, highlight_feature=None):
+    def constellation(self, save_path: str = None, highlight_changed_feature=None):
+        """
+        Create a constellation plot showing feature contributions to the counterfactual.
+        
+        Args:
+            save_path (str, optional): Path to save the plot. Defaults to None.
+            highlight_changed_feature (int, optional): Index of the changed feature to highlight 
+                (0 to N-1, where N is the number of features that differ between factual and 
+                counterfactual). When specified, only the coalitions containing this feature 
+                change will be emphasized in the plot. Defaults to None (all features shown 
+                with equal emphasis).
+        
+        Returns:
+            tuple: (fig, ax) matplotlib figure and axis objects
+        """
 
         # Get the index of the features that are different between the factual and counterfactual
         idx_feat_diff = np.where(self.factual != self.cf)[0]
@@ -207,7 +221,7 @@ class CreatePlot:
             cf_score=self.cf_score,
             point_to_pred=point_to_pred,
             save_path=save_path,
-            highlight_feature=highlight_feature
+            highlight_changed_feature=highlight_changed_feature
         )
 
         return fig, ax
