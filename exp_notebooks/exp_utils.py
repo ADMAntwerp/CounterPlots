@@ -8,7 +8,7 @@ class CounterPlotNice(NICE):
     def __init__(self, predict_fn, decision_threshold=0.5, *args, **kwargs):
         super().__init__(predict_fn, *args, **kwargs)
         self.predict_fn = predict_fn
-        self.decision_threshold=decision_threshold
+        self.decision_threshold = decision_threshold
 
     def explain(self, X, feature_names=None, class_names=None, target_class='other'):
         explanations = super().explain(X, target_class)

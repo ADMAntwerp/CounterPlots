@@ -115,8 +115,6 @@ class CreatePlot:
 
         return fig, ax
 
-        return fig, ax
-
     def countershapley_values(self):
         feat_contributions, feat_modified = calc_shapley_values_between(
             instance1=self.factual,
@@ -239,7 +237,7 @@ class CreatePlot:
 
         return fig, ax
 
-    def constellation_interactive(self, save_path: str = None, highlight_feature=None):
+    def constellation_interactive(self, save_path: str = None):
         # Get the index of the features that are different between the factual and counterfactual
         idx_feat_diff = np.where(self.factual != self.cf)[0]
 

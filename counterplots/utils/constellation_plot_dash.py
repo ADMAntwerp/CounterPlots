@@ -1,7 +1,6 @@
 import numpy as np
 from dash import Dash, dcc, html, Input, Output, State, callback_context
 import plotly.graph_objects as go
-import json
 from ._COLORS import RED1, BLUE1, PINK1, BLUE1, LIGHT_GREY, DARK_GREY
 
 class ConstellationPlotDash:
@@ -18,7 +17,6 @@ class ConstellationPlotDash:
         class_names, 
         cf_score, 
         point_to_pred,
-        highlight_feature=None,
         decision_threshold=0.5
     ):
         self.factual_score = factual_score
@@ -30,7 +28,6 @@ class ConstellationPlotDash:
         self.class_names = class_names
         self.cf_score = cf_score
         self.point_to_pred = point_to_pred
-        self.highlight_feature = highlight_feature
         self.decision_threshold = decision_threshold
         
         self.y_lim_low = -0.5
@@ -55,7 +52,7 @@ class ConstellationPlotDash:
         self._setup_layout()
         self._setup_callbacks()
     
-    def _create_base_figure(self, selected_coalition=None, is_single=False):
+    def _create_base_figure(self, selected_coalition=None):
         """Create the figure with optional coalition highlighting."""
         fig = go.Figure()
         
@@ -70,9 +67,6 @@ class ConstellationPlotDash:
         fig.add_vline(x=self.decision_threshold, line_color=RED1, line_width=1, opacity=0.5)
         fig.add_vline(x=self.factual_score, line_color=PINK1, line_dash="dash", line_width=1.5)
         fig.add_vline(x=self.cf_score, line_color=BLUE1, line_dash="dash", line_width=1.5)
-        
-        # Add annotations
-        max_text_features = max([len(f) for f in self.text_features])
         
         fig.add_annotation(
             x=self.factual_score, 
@@ -93,7 +87,6 @@ class ConstellationPlotDash:
         )
         
         # Class names
-        size_factual_class = len(self.class_names[0]) * 0.01
         fig.add_annotation(
             x=self.decision_threshold-.02*self.x_width,
             y=len(self.text_features)-.5,
@@ -126,7 +119,7 @@ class ConstellationPlotDash:
         single_colors = []
         single_sizes = []
         
-        for idx_p, p in enumerate(self.single_points_chart):
+        for p in self.single_points_chart:
             adapted_feat_ind, score = p
             if active_features is not None:
                 if adapted_feat_ind in active_features:
@@ -237,7 +230,7 @@ class ConstellationPlotDash:
                     if s < self.decision_threshold: color = '#E0423A'
                     else: color = 'blue'
                     size = 5
-                
+
                 multi_x.append(s)
                 multi_y.append(y_val)
                 multi_colors.append(color)
@@ -248,7 +241,7 @@ class ConstellationPlotDash:
                     for f in sorted(f_ind)
                     ]
                 multi_text.append('<br>'.join(features_str[::-1]))
-            
+
             fig.add_trace(go.Scatter(
                 x=multi_x,
                 y=multi_y,
@@ -260,7 +253,7 @@ class ConstellationPlotDash:
                 name='Coalitions',
                 showlegend=False
             ))
-        
+
         # Layout
         fig.update_layout(
             width=1000,
@@ -327,8 +320,6 @@ class ConstellationPlotDash:
             # Plot clicked
             if trigger_id == 'constellation-plot' and clickData:
                 point = clickData['points'][0]
-                curve_number = point['curveNumber']
-                trace_name = point.get('fullData', {}).get('name', '')
                 
                 if 'customdata' in point:
                     selected_coalition_idx = int(point['customdata'])                    
