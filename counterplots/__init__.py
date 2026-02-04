@@ -67,6 +67,7 @@ class CreatePlot:
             class_names=self.class_names,
             save_path=save_path)
         return fig, ax
+        return fig, ax
 
     def countershapley(self, save_path: str = None):
 
@@ -105,6 +106,8 @@ class CreatePlot:
 
         return fig, ax
 
+        return fig, ax
+
     def countershapley_values(self):
         feat_contributions, feat_modified = calc_shapley_values_between(
             instance1=self.factual,
@@ -118,7 +121,21 @@ class CreatePlot:
             'feature_indices': feat_modified
         }
 
-    def constellation(self, save_path: str = None, highlight_feature=None):
+    def constellation(self, save_path: str = None, highlight_changed_feature=None):
+        """
+        Create a constellation plot showing feature contributions to the counterfactual.
+        
+        Args:
+            save_path (str, optional): Path to save the plot. Defaults to None.
+            highlight_changed_feature (int, optional): Index of the changed feature to highlight 
+                (0 to N-1, where N is the number of features that differ between factual and 
+                counterfactual). When specified, only the coalitions containing this feature 
+                change will be emphasized in the plot. Defaults to None (all features shown 
+                with equal emphasis).
+        
+        Returns:
+            tuple: (fig, ax) matplotlib figure and axis objects
+        """
 
         # Get the index of the features that are different between the factual and counterfactual
         idx_feat_diff = np.where(self.factual != self.cf)[0]
@@ -207,13 +224,12 @@ class CreatePlot:
             cf_score=self.cf_score,
             point_to_pred=point_to_pred,
             save_path=save_path,
-            highlight_feature=highlight_feature
+            highlight_changed_feature=highlight_changed_feature
         )
 
         return fig, ax
 
     def constellation_interactive(self, save_path: str = None, highlight_feature=None):
-
         # Get the index of the features that are different between the factual and counterfactual
         idx_feat_diff = np.where(self.factual != self.cf)[0]
 
@@ -241,12 +257,19 @@ class CreatePlot:
 
         # Create all possible combinations from 1 to the number of features that are different - 1
         idx_feat_comb = [list(combinations(idx_feat_diff, i)) for i in range(1, len(idx_feat_diff))]
+        idx_feat_comb = [list(combinations(idx_feat_diff, i)) for i in range(1, len(idx_feat_diff))]
         idx_feat_comb = [item for sublist in idx_feat_comb for item in sublist]
 
         # Dataset with modified points
         points_mod = np.array([self.factual] * len(idx_feat_comb))
 
         # Make the changes to the points
+        points_mod = np.array([
+            np.array([
+                points_mod[i][j] if j not in idx_feat_comb[i] else self.cf[j]
+                for j in range(len(self.factual))]) for i in range(len(idx_feat_comb)
+            )]
+        )
         points_mod = np.array([
             np.array([
                 points_mod[i][j] if j not in idx_feat_comb[i] else self.cf[j]
@@ -263,7 +286,19 @@ class CreatePlot:
             for idx, comb in enumerate(idx_feat_comb) 
             if len(comb) == 1
         ])
+        # Get single points with single change and their predictions - These are plotted larger
+        single_points = np.array([
+            [comb[0], points_pred[idx]] 
+            for idx, comb in enumerate(idx_feat_comb) 
+            if len(comb) == 1
+        ])
 
+        # Get multiple points with multiple changes and their predictions - these are plotted smaller
+        multiple_points = np.array([
+            [comb, points_pred[idx]] 
+            for idx, comb in enumerate(idx_feat_comb) 
+            if len(comb) > 1
+        ], dtype=object)
         # Get multiple points with multiple changes and their predictions - these are plotted smaller
         multiple_points = np.array([
             [comb, points_pred[idx]] 
