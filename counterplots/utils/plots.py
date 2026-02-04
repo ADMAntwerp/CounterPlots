@@ -270,9 +270,31 @@ def make_constellation_plot(
     cf_score, 
     point_to_pred, 
     save_path,
-    highlight_feature=None
+    highlight_changed_feature=None
     ):
-    if highlight_feature is not None: assert isinstance(highlight_feature, int), "Please pass a feature index (int) for the keyword `highlight_feature`"
+    """
+    Create a constellation plot visualizing feature change contributions.
+    
+    Args:
+        factual_score (float): The factual prediction score
+        single_points_chart (np.ndarray): Chart coordinates for single feature changes
+        text_features (list): Feature names with value changes
+        mulitple_points_chart (np.ndarray): Chart data for multiple feature changes
+        mulitple_points_chart_y (list): Y-axis values for multiple feature changes
+        single_points (np.ndarray): Single feature change points data
+        class_names (dict): Mapping of class indices to names
+        cf_score (float): Counterfactual prediction score
+        point_to_pred (dict): Mapping of feature indices to predictions
+        save_path (str, optional): Path to save the plot
+        highlight_changed_feature (int, optional): Index of the changed feature to highlight
+            (0 to N-1, where N is the number of features that differ between factual and
+            counterfactual). When specified, only coalitions containing this feature change
+            will be emphasized. Defaults to None (all features shown with equal emphasis).
+    
+    Returns:
+        tuple: (fig, ax) matplotlib figure and axis objects
+    """
+    if highlight_changed_feature is not None: assert isinstance(highlight_changed_feature, int), "Please pass a feature change index (int) for the keyword `highlight_changed_feature`"
     x_dim = 10
     y_dim = 4
     y_lim_low = -0.1
@@ -290,7 +312,7 @@ def make_constellation_plot(
     for idx_p, p in enumerate(single_points_chart):
         adapted_feat_ind, score = p
         color = BLUE_TR if score >= 0.5 else PINK1_TR
-        if highlight_feature is not None and highlight_feature != adapted_feat_ind: color=LIGHT_GREY
+        if highlight_changed_feature is not None and highlight_changed_feature != adapted_feat_ind: color=LIGHT_GREY
         plt.scatter(
             [score], 
             [adapted_feat_ind], 
@@ -313,14 +335,14 @@ def make_constellation_plot(
     if len(mulitple_points_chart) > 0:
         adapted_feat_inds_per_point = mulitple_points_chart[:, 0]  # average height ~ average adapted feat inds.
         scores = mulitple_points_chart[:, 1]
-        if highlight_feature is None:
+        if highlight_changed_feature is None:
             # No specific feature highlighted: keep original sign-based coloring
             colors = ['#E0423A' if s < 0.5 else 'blue' for s in scores]
         else:
             # When highlighting a feature, de-emphasize all coalitions that do not contain it
             colors = [
-                '#E0423A' if s < 0.5 and highlight_feature in f_ind
-                else 'blue' if s >= 0.5 and highlight_feature in f_ind
+                '#E0423A' if s < 0.5 and highlight_changed_feature in f_ind
+                else 'blue' if s >= 0.5 and highlight_changed_feature in f_ind
                 else LIGHT_GREY
                 for s, f_ind in zip(scores, adapted_feat_inds_per_point)
             ]
@@ -373,7 +395,7 @@ def make_constellation_plot(
 
     # Plot Counterfactual lines
     for i in range(len(single_points)):
-        if highlight_feature is not None and i != highlight_feature: continue
+        if highlight_changed_feature is not None and i != highlight_changed_feature: continue
         x_0 = point_to_pred[i]
         x_1 = cf_score
         y_0 = i
@@ -389,7 +411,7 @@ def make_constellation_plot(
 
     for points, x_value in mulitple_points_chart:
         for origin_point in points:
-            if highlight_feature is not None and origin_point != highlight_feature: continue
+            if highlight_changed_feature is not None and origin_point != highlight_changed_feature: continue
             x_0 = point_to_pred[origin_point]
             x_1 = x_value
             y_0 = origin_point

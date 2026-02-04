@@ -86,17 +86,17 @@ class CreatePlotTests(unittest.TestCase):
         # Check if constellation is not called
         mock_make_constellation_plot.assert_not_called()
 
-    def test_constellation_with_highlight_feature(self):
-        """Test that constellation plot correctly handles highlight_feature parameter.
+    def test_constellation_with_highlight_changed_feature(self):
+        """Test that constellation plot correctly handles highlight_changed_feature parameter.
         
-        When highlight_feature is passed, only the corresponding feature's subcoalitions
+        When highlight_changed_feature is passed, only the corresponding feature change's subcoalitions
         should remain emphasized (not greyed out) in the plot.
         """
         create_plot = CreatePlot(self.factual, self.cf, self.model_pred, self.feature_names, self.class_names)
         
-        # Test highlighting the first feature (index 0)
-        highlight_feature_idx = 0
-        fig, ax = create_plot.constellation(save_path=None, highlight_feature=highlight_feature_idx)
+        # Test highlighting the first changed feature (index 0 in the changed features list)
+        highlight_changed_feature_idx = 0
+        fig, ax = create_plot.constellation(save_path=None, highlight_changed_feature=highlight_changed_feature_idx)
         
         # Verify that the plot was created successfully
         self.assertIsNotNone(fig)
