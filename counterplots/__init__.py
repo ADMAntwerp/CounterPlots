@@ -237,7 +237,7 @@ class CreatePlot:
 
         return fig, ax
 
-    def constellation_interactive(self, save_path: str = None):
+    def constellation_interactive(self, save_path: str = None, port=8050):
         # Get the index of the features that are different between the factual and counterfactual
         idx_feat_diff = np.where(self.factual != self.cf)[0]
 
@@ -324,8 +324,10 @@ class CreatePlot:
             class_names=self.class_names,
             cf_score=self.cf_score,
             point_to_pred=point_to_pred,
-            decision_threshold=self.decision_threshold
+            decision_threshold=self.decision_threshold,
+            port=8050
         )
 
 
         return fig
+
