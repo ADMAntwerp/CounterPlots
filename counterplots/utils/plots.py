@@ -3,13 +3,11 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 import matplotlib.patches as patches
-import plotly.graph_objects as go
 from .constellation_plot_dash import ConstellationPlotDash
 from ._COLORS import RED1, BLUE1, PINK1, PINK1_TR, BLUE1, BLUE_TR, LIGHT_GREY, DARK_GREY
 
 
 def _get_text_width_in_data_co(text, fig, ax):
-    renderer = fig.canvas.get_renderer()
     fig.canvas.draw()
 
     bbox = text.get_extents()
