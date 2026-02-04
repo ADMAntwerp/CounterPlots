@@ -272,7 +272,7 @@ def make_constellation_plot(
     save_path,
     highlight_feature=None
     ):
-    if highlight_feature is not None: assert isinstance(highlight_feature, int), "Please pass a feature index (int) for the keyword `highlight`"
+    if highlight_feature is not None: assert isinstance(highlight_feature, int), "Please pass a feature index (int) for the keyword `highlight_feature`"
     x_dim = 10
     y_dim = 4
     y_lim_low = -0.1
