@@ -127,7 +127,7 @@ class CreatePlotTests(unittest.TestCase):
                     has_other_color = True
         
         # When highlighting a feature, we expect both highlighted and non-highlighted points
-        self.assertTrue(has_light_grey or has_other_color, 
-                       "Plot should contain either highlighted or greyed-out points")
+        self.assertTrue(has_light_grey and has_other_color, 
+                       "Plot should contain both highlighted and greyed-out points")
         
         plt.close(fig)
