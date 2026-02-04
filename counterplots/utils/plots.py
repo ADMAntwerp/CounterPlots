@@ -3,14 +3,10 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 import matplotlib.patches as patches
+import plotly.graph_objects as go
+from .constellation_plot_dash import ConstellationPlotDash
+from ._COLORS import RED1, BLUE1, PINK1, PINK1_TR, BLUE1, BLUE_TR, LIGHT_GREY, DARK_GREY
 
-PINK1 = "#ff0055"
-PINK1_TR = "#ff0055D2"
-RED1 = "#c20000"
-BLUE1 = "#008ae7"
-BLUE_TR = "#008ae7D2"
-DARK_GREY = "#545454" 
-LIGHT_GREY = "#e0e0e0" 
 
 
 def _get_text_width_in_data_co(text, fig, ax):
@@ -29,7 +25,7 @@ def _infer_text_orientation(text, fig, ax, w_limit):
     if _get_text_width_in_data_co(text, fig, ax) > w_limit: return "vertical" 
     return "horizontal"
 
-def make_greedy_plot(factual_score, features_data, class_names, save_path):
+def make_greedy_plot(factual_score, features_data, class_names, save_path, decision_threshold=0.5):
     fig = plt.figure(figsize=(7, 1 * len(features_data))) # noqa
 
     scatter_points = [f['score'] for f in features_data]
@@ -46,7 +42,7 @@ def make_greedy_plot(factual_score, features_data, class_names, save_path):
         plt.scatter(
             [point],
             [c_idx],
-            color=PINK1_TR if point < 0.5 else BLUE_TR,
+            color=PINK1_TR if point < decision_threshold else BLUE_TR,
             s=100)
 
     features_names = ['Factual']
@@ -56,7 +52,7 @@ def make_greedy_plot(factual_score, features_data, class_names, save_path):
     max_feat_names_length = max([len(feat_name) for feat_name in features_names])
 
     # Plot a vertical line at the threshold score
-    plt.axvline(x=0.5, color=RED1, zorder=0, linewidth=0.5)
+    plt.axvline(x=decision_threshold, color=RED1, zorder=0, linewidth=0.5)
 
     # Plot a vertical line at the factual score
     plt.axvline(x=factual_score, color=PINK1_TR,
@@ -263,14 +259,15 @@ def make_constellation_plot(
     factual_score, 
     single_points_chart, 
     text_features, 
-    mulitple_points_chart,
-    mulitple_points_chart_y, 
+    multiple_points_chart,
+    multiple_points_chart_y, 
     single_points, 
     class_names, 
     cf_score, 
     point_to_pred, 
     save_path,
-    highlight_feature=None
+    highlight_feature=None,
+    decision_threshold=0.5
     ):
     if highlight_feature is not None: assert isinstance(highlight_feature, int), "Please pass a feature index (int) for the keyword `highlight`"
     x_dim = 10
@@ -310,18 +307,18 @@ def make_constellation_plot(
             )
 
     # Verify if there are multiple change points
-    if len(mulitple_points_chart) > 0:
-        adapted_feat_inds_per_point = mulitple_points_chart[:, 0]  # average height ~ average adapted feat inds.
-        scores = mulitple_points_chart[:, 1]
+    if len(multiple_points_chart) > 0:
+        adapted_feat_inds_per_point = multiple_points_chart[:, 0]  # average height ~ average adapted feat inds.
+        scores = multiple_points_chart[:, 1]
         colors = [
-            '#E0423A' if s < 0.5 and (highlight_feature is None or highlight_feature in f_ind)
-            else LIGHT_GREY if s < 0.5 and highlight_feature not in f_ind
+            '#E0423A' if s < decision_threshold and (highlight_feature is None or highlight_feature in f_ind)
+            else LIGHT_GREY if s < decision_threshold and highlight_feature not in f_ind
             else 'blue' 
             for s, f_ind in zip(scores, adapted_feat_inds_per_point)
         ]
         plt.scatter(
             scores,
-            mulitple_points_chart_y,
+            multiple_points_chart_y,
             color=colors,
             s=10
         )
@@ -331,11 +328,11 @@ def make_constellation_plot(
     plt.scatter(
         [cf_score], 
         [cf_pred_x_1], 
-        color=BLUE_TR if cf_score >= 0.5 else PINK1_TR, 
+        color=BLUE_TR if cf_score >= decision_threshold else PINK1_TR, 
         s=100)
 
     # Plot a vertical line at the threshold
-    plt.axvline(x=0.5, color=RED1, zorder=0, linewidth=0.5)
+    plt.axvline(x=decision_threshold, color=RED1, zorder=0, linewidth=0.5)
 
     # Plot a vertical line at the factual score
     plt.axvline(x=factual_score, color=PINK1_TR,
@@ -382,7 +379,7 @@ def make_constellation_plot(
             alpha=0.15, 
             linestyle='dotted')
 
-    for points, x_value in mulitple_points_chart:
+    for points, x_value in multiple_points_chart:
         for origin_point in points:
             if highlight_feature is not None and origin_point != highlight_feature: continue
             x_0 = point_to_pred[origin_point]
@@ -403,3 +400,270 @@ def make_constellation_plot(
         plt.savefig(save_path, bbox_inches='tight')
 
     return fig, ax
+
+
+def make_constellation_plot_plotly(
+    factual_score, 
+    single_points_chart, 
+    text_features, 
+    multiple_points_chart,
+    multiple_points_chart_y, 
+    single_points, 
+    class_names, 
+    cf_score, 
+    point_to_pred, 
+    save_path=None,
+    highlight_feature=None,
+    decision_threshold=0.5
+):
+    """
+    Create an interactive constellation plot using Plotly.
+    
+    Hovering over coalition points will highlight only the relevant features and connections.
+    """
+    
+    y_lim_low = -0.1
+    y_lim_high = len(single_points_chart) - 0.9
+    x_lim_low = 0
+    x_lim_high = 1
+    
+    fig = go.Figure()
+    
+    # Calculate counterfactual y position
+    cf_pred_x_1 = np.mean([*range(len(single_points))])
+    
+    # Add vertical lines (threshold, factual, counterfactual)
+    fig.add_vline(x=decision_threshold, line_color=RED1, line_width=1, opacity=0.5)
+    fig.add_vline(x=factual_score, line_color=PINK1, line_dash="dash", line_width=1.5)
+    fig.add_vline(x=cf_score, line_color=BLUE1, line_dash="dash", line_width=1.5)
+    
+    # Add text annotations for vertical lines
+    fig.add_annotation(
+        x=factual_score - 0.06, 
+        y=len(text_features) * 1.01 - 0.9,
+        text='Factual Score',
+        showarrow=False,
+        font=dict(color=PINK1, size=12)
+    )
+    fig.add_annotation(
+        x=cf_score - 0.10, 
+        y=len(text_features) * 1.01 - 0.9,
+        text='Counterfactual Score',
+        showarrow=False,
+        font=dict(color=BLUE1, size=12)
+    )
+    
+    # Add class names
+    max_text_features = max([len(f) for f in text_features])
+    size_factual_class = len(class_names[0]) * 0.01  # Approximate width
+    
+    fig.add_annotation(
+        x=0.48 - size_factual_class - max_text_features * 0.0001,
+        y=len(text_features) - 0.9 + len(text_features) * 0.04,
+        text=class_names[0],
+        showarrow=False,
+        font=dict(color=PINK1, size=12, family='Arial Black')
+    )
+    fig.add_annotation(
+        x=0.49,
+        y=len(text_features) - 0.9 + len(text_features) * 0.04,
+        text='➜',
+        showarrow=False,
+        font=dict(color=RED1, size=12, family='Arial Black')
+    )
+    fig.add_annotation(
+        x=0.51,
+        y=len(text_features) - 0.9 + len(text_features) * 0.04,
+        text=class_names[1],
+        showarrow=False,
+        font=dict(color=BLUE1, size=12, family='Arial Black')
+    )
+    
+    # Add feature name annotations
+    for i in range(len(text_features)):
+        fig.add_annotation(
+            x=-0.012 * max_text_features,
+            y=i,
+            text=text_features[i],
+            showarrow=False,
+            font=dict(color=DARK_GREY, size=12),
+            xanchor='right'
+        )
+    
+    # Plot single change points
+    single_x = []
+    single_y = []
+    single_colors = []
+    single_customdata = []
+    
+    for idx_p, p in enumerate(single_points_chart):
+        adapted_feat_ind, score = p
+        color = BLUE1 if score >= decision_threshold else PINK1
+        if highlight_feature is not None and highlight_feature != adapted_feat_ind:
+            color = LIGHT_GREY
+        single_x.append(score)
+        single_y.append(adapted_feat_ind)
+        single_colors.append(color)
+        single_customdata.append([adapted_feat_ind])
+    
+    fig.add_trace(go.Scatter(
+        x=single_x,
+        y=single_y,
+        mode='markers',
+        marker=dict(size=15, color=single_colors),
+        customdata=single_customdata,
+        hovertemplate='Feature: %{customdata[0]}<br>Score: %{x:.3f}<extra></extra>',
+        name='Single Features',
+        showlegend=False
+    ))
+    
+    # Add lines from single points to counterfactual
+    for i in range(len(single_points)):
+        if highlight_feature is not None and i != highlight_feature:
+            continue
+        x_0 = point_to_pred[i]
+        x_1 = cf_score
+        y_0 = i
+        y_1 = cf_pred_x_1
+        
+        fig.add_trace(go.Scatter(
+            x=[x_0, x_1],
+            y=[y_0, y_1],
+            mode='lines',
+            line=dict(color='rgba(0,0,0,0.15)', width=1, dash='dot'),
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+    
+    # Plot counterfactual point
+    cf_color = BLUE1 if cf_score >= decision_threshold else PINK1
+    fig.add_trace(go.Scatter(
+        x=[cf_score],
+        y=[cf_pred_x_1],
+        mode='markers',
+        marker=dict(size=15, color=cf_color),
+        hovertemplate='Counterfactual<br>Score: %{x:.3f}<extra></extra>',
+        name='Counterfactual',
+        showlegend=False
+    ))
+    
+    # Plot multiple points and their connections
+    if len(multiple_points_chart) > 0:
+        # First add all the connection lines
+        for (points, x_value), y_val in zip(multiple_points_chart, multiple_points_chart_y):
+            for origin_point in points:
+                if highlight_feature is not None and origin_point != highlight_feature:
+                    continue
+                x_0 = point_to_pred[origin_point]
+                x_1 = x_value
+                y_0 = origin_point
+                y_1 = y_val
+                
+                fig.add_trace(go.Scatter(
+                    x=[x_0, x_1],
+                    y=[y_0, y_1],
+                    mode='lines',
+                    line=dict(color='rgba(224,224,224,0.5)', width=1),
+                    showlegend=False,
+                    hoverinfo='skip',
+                    customdata=[[origin_point, tuple(points)]]
+                ))
+        
+        # Now add the coalition points
+        adapted_feat_inds_per_point = multiple_points_chart[:, 0]
+        scores = multiple_points_chart[:, 1]
+        
+        multi_x = []
+        multi_y = []
+        multi_colors = []
+        multi_customdata = []
+        multi_text = []
+        
+        for i, (s, f_ind, y_val) in enumerate(zip(scores, adapted_feat_inds_per_point, multiple_points_chart_y)):
+            if s < decision_threshold:
+                if highlight_feature is None or highlight_feature in f_ind:
+                    color = '#E0423A'
+                else:
+                    color = LIGHT_GREY
+            else:
+                color = 'blue'
+            
+            multi_x.append(s)
+            multi_y.append(y_val)
+            multi_colors.append(color)
+            multi_customdata.append([tuple(f_ind), i])
+            multi_text.append(f"Coalition: {sorted(f_ind)}")
+        
+        fig.add_trace(go.Scatter(
+            x=multi_x,
+            y=multi_y,
+            mode='markers',
+            marker=dict(size=5, color=multi_colors),
+            customdata=multi_customdata,
+            hovertemplate='%{text}<br>Score: %{x:.3f}<extra></extra>',
+            text=multi_text,
+            name='Coalitions',
+            showlegend=False
+        ))
+    
+    # Update layout
+    fig.update_layout(
+        width=1000,
+        height=400,
+        xaxis=dict(
+            range=[x_lim_low, x_lim_high],
+            title='Score',
+            showgrid=True,
+            gridcolor='rgba(200,200,200,0.2)'
+        ),
+        yaxis=dict(
+            range=[y_lim_low, y_lim_high],
+            showticklabels=False,
+            showgrid=False
+        ),
+        plot_bgcolor='white',
+        hovermode='closest',
+        margin=dict(l=200, r=50, t=50, b=50)
+    )
+    
+    if save_path is not None:
+        fig.write_html(save_path)
+    
+    return fig
+
+
+def make_constellation_plot_dash(
+    factual_score, 
+    single_points_chart, 
+    text_features, 
+    multiple_points_chart,
+    multiple_points_chart_y, 
+    single_points, 
+    class_names, 
+    cf_score, 
+    point_to_pred,
+    highlight_feature=None,
+    debug=True,
+    port=8050
+):
+    """
+    Create and run an interactive constellation plot using Dash.
+    
+    Click on coalition points to highlight only the connected features and edges.
+    Click the Reset button or click the same coalition again to return to normal view.
+    """
+    plot = ConstellationPlotDash(
+        factual_score=factual_score,
+        single_points_chart=single_points_chart,
+        text_features=text_features,
+        multiple_points_chart=multiple_points_chart,
+        multiple_points_chart_y=multiple_points_chart_y,
+        single_points=single_points,
+        class_names=class_names,
+        cf_score=cf_score,
+        point_to_pred=point_to_pred,
+        highlight_feature=highlight_feature
+    )
+    
+    plot.run(debug=debug, port=port)
+    return plot
