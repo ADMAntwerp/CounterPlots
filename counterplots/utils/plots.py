@@ -7,15 +7,6 @@ import plotly.graph_objects as go
 from .constellation_plot_dash import ConstellationPlotDash
 from ._COLORS import RED1, BLUE1, PINK1, PINK1_TR, BLUE1, BLUE_TR, LIGHT_GREY, DARK_GREY
 
-PINK1 = "#ff0055"
-PINK1_TR = "#ff0055D2"
-RED1 = "#c20000"
-BLUE1 = "#008ae7"
-BLUE_TR = "#008ae7D2"
-DARK_GREY = "#545454" 
-LIGHT_GREY = "#e0e0e0" 
-
-
 def _get_text_width_in_data_co(text, fig, ax):
     renderer = fig.canvas.get_renderer()
     fig.canvas.draw()
