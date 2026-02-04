@@ -297,19 +297,7 @@ class CreatePlot:
             for idx, comb in enumerate(idx_feat_comb) 
             if len(comb) == 1
         ])
-        # Get single points with single change and their predictions - These are plotted larger
-        single_points = np.array([
-            [comb[0], points_pred[idx]] 
-            for idx, comb in enumerate(idx_feat_comb) 
-            if len(comb) == 1
-        ])
 
-        # Get multiple points with multiple changes and their predictions - these are plotted smaller
-        multiple_points = np.array([
-            [comb, points_pred[idx]] 
-            for idx, comb in enumerate(idx_feat_comb) 
-            if len(comb) > 1
-        ], dtype=object)
         # Get multiple points with multiple changes and their predictions - these are plotted smaller
         multiple_points = np.array([
             [comb, points_pred[idx]] 
