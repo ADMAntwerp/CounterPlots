@@ -267,19 +267,12 @@ class CreatePlot:
 
         # Create all possible combinations from 1 to the number of features that are different - 1
         idx_feat_comb = [list(combinations(idx_feat_diff, i)) for i in range(1, len(idx_feat_diff))]
-        idx_feat_comb = [list(combinations(idx_feat_diff, i)) for i in range(1, len(idx_feat_diff))]
         idx_feat_comb = [item for sublist in idx_feat_comb for item in sublist]
 
         # Dataset with modified points
         points_mod = np.array([self.factual] * len(idx_feat_comb))
 
         # Make the changes to the points
-        points_mod = np.array([
-            np.array([
-                points_mod[i][j] if j not in idx_feat_comb[i] else self.cf[j]
-                for j in range(len(self.factual))]) for i in range(len(idx_feat_comb)
-            )]
-        )
         points_mod = np.array([
             np.array([
                 points_mod[i][j] if j not in idx_feat_comb[i] else self.cf[j]
