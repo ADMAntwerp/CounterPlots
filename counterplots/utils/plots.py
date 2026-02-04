@@ -277,15 +277,42 @@ def make_constellation_plot(
     
     Args:
         factual_score (float): The factual prediction score
-        single_points_chart (np.ndarray): Chart coordinates for single feature changes
-        text_features (list): Feature names with value changes
-        mulitple_points_chart (np.ndarray): Chart data for multiple feature changes
-        mulitple_points_chart_y (list): Y-axis values for multiple feature changes
-        single_points (np.ndarray): Single feature change points data
-        class_names (dict): Mapping of class indices to names
+        
+        single_points_chart (np.ndarray): 2D array of shape (N, 2) mapping feature CHANGE index 
+            to prediction value for single feature changes. Each row is [feature_change_idx, score].
+            Example: array([[0., 0.154], [1., 0.187], [2., 0.214]])
+            Used to plot the larger dots representing single feature changes.
+        
+        text_features (list): List of strings with feature names and their value changes.
+            Format: "feature_name (factual_value➜counterfactual_value)"
+            Example: ["age (25➜30)", "income (50000➜60000)"]
+        
+        mulitple_points_chart (np.ndarray): Array of shape (M,) with dtype=object, where each 
+            element is [array([feature_change_indices]), score]. Maps feature CHANGE index 
+            coalitions to their prediction scores, excluding the case where ALL features are changed.
+            Example: array([[array([0, 1]), 0.334], [array([0, 2]), 0.370], [array([1, 2]), 0.429]], 
+            dtype=object)
+            Used to plot the smaller dots representing multiple simultaneous feature changes.
+        
+        mulitple_points_chart_y (list): List of y-axis positions for the multiple change points.
+            Each value is the mean of the feature change indices in the coalition.
+            Example: [0.5, 1.0, 1.5]
+        
+        single_points (np.ndarray): 2D array of shape (N, 2) mapping original feature index 
+            (NOT feature CHANGE index) to prediction values. Format: [feature_idx, score].
+            Example: array([[0., 0.154], [1., 0.187], [8., 0.214]])
+            Note: The feature index in this array is not actually used in the plotting logic.
+        
+        class_names (dict): Mapping of class indices to class names.
+            Example: {0: "Rejected", 1: "Accepted"}
+        
         cf_score (float): Counterfactual prediction score
-        point_to_pred (dict): Mapping of feature indices to predictions
-        save_path (str, optional): Path to save the plot
+        
+        point_to_pred (dict): Mapping of feature CHANGE indices to their single-change prediction scores.
+            Example: {0: 0.154, 1: 0.187, 2: 0.214}
+        
+        save_path (str, optional): Path to save the plot. If None, plot is not saved.
+        
         highlight_changed_feature (int, optional): Index of the changed feature to highlight
             (0 to N-1, where N is the number of features that differ between factual and
             counterfactual). When specified, only coalitions containing this feature change
