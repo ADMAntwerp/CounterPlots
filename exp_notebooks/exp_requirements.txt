@@ -16,6 +16,7 @@ cycler==0.11.0
 debugpy==1.6.5
 decorator==5.1.1
 defusedxml==0.7.1
+dice-ml==0.11
 docutils==0.19
 entrypoints==0.4
 executing==1.2.0
@@ -91,6 +92,7 @@ PyYAML==6.0
 pyzmq==24.0.1
 qtconsole==5.4.0
 QtPy==2.3.0
+raiutils==0.4.2
 readme-renderer==37.0
 requests-toolbelt==0.9.1
 rfc3339-validator==0.1.4

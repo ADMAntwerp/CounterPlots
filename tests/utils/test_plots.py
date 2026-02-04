@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch
-
+import matplotlib.pyplot as plt
 import numpy as np
 
 from counterplots.utils.plots import make_greedy_plot, make_countershapley_plot, make_constellation_plot
@@ -23,9 +23,8 @@ class TestMakeGreedyPlot(unittest.TestCase):
 
 class TestMakeCounterShapleyPlot(unittest.TestCase):
 
-    @patch('counterplots.utils.plots.plt')
-    @patch('counterplots.utils.plots.mpl')
-    def test_make_countershapley_plot(self, mock_mpl, mock_plt):
+
+    def test_make_countershapley_plot(self):
         factual_score = 0.0
         features_data = [{'x': 62.0,
                           'score': 0.4,
@@ -40,7 +39,8 @@ class TestMakeCounterShapleyPlot(unittest.TestCase):
         class_names = {0: 'Class A', 1: 'Class B'}
         save_path = 'plot.png'
 
-        make_countershapley_plot(factual_score, features_data, class_names, save_path)
+        fig, ax = make_countershapley_plot(factual_score, features_data, class_names, save_path)
+        plt.close(fig)
 
 
 class TestMakeConstellationPlot(unittest.TestCase):
