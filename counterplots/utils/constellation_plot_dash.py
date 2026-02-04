@@ -340,6 +340,6 @@ class ConstellationPlotDash:
             # No change
             return self._create_base_figure(), "", None
     
-    def run(self, debug=True, port=8050):
+    def run(self, port=8050):
         """Run the Dash app."""
-        self.app.run(debug=debug, port=port)
+        self.app.run(port=port)
