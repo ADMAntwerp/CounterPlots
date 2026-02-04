@@ -73,7 +73,6 @@ class CreatePlot:
             decision_threshold=self.decision_threshold
             )
         return fig, ax
-        return fig, ax
 
     def countershapley(self, save_path: str = None):
 
