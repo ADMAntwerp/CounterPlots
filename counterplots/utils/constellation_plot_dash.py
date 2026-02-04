@@ -147,7 +147,7 @@ class ConstellationPlotDash:
             y=single_y,
             mode='markers',
             marker=dict(size=single_sizes, color=single_colors),
-            customdata=[i for i in range(len(self.single_points_chart))][::-1],
+            customdata=[i for i in range(len(self.single_points_chart))],
             hovertemplate='Score: %{x:.3f}<extra></extra>',
             name='single_features',
             showlegend=False
@@ -247,7 +247,7 @@ class ConstellationPlotDash:
                     "• " + self.text_features[int(f)]
                     for f in sorted(f_ind)
                     ]
-                multi_text.append('<br>'.join(features_str))
+                multi_text.append('<br>'.join(features_str[::-1]))
             
             fig.add_trace(go.Scatter(
                 x=multi_x,
