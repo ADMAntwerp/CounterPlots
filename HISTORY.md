@@ -1,3 +1,11 @@
+# 0.0.8 / 2026-02-04
+==================
+* Add feature highlighting in Constellation Chart
+* Auto-rotate text in CounterShapley chart
+* Gracefully handle negative values in CounterShapley Chart
+* Return fig and ax objects from plotting functions
+* Add uv environment support
+
 # 0.0.7 / 2023-06-10
 ==================
 * Upgrade dependencies requirements
