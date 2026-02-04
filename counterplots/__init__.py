@@ -18,7 +18,9 @@ class CreatePlot:
             cf: np.ndarray,
             model_pred: Callable,
             feature_names: List[str] = None,
-            class_names: Dict[int, str] = None):
+            class_names: Dict[int, str] = None,
+            decision_threshold = 0.5
+            ):
 
         # If feature_names is not provided, create it
         if feature_names is None:
@@ -33,6 +35,7 @@ class CreatePlot:
         self.cf = np.array(cf)
         self.feature_names = feature_names
         self.class_names = class_names
+        self.decision_threshold = decision_threshold
 
         # Make verifications
         verify_factual_counterfactual_shape(factual, cf)
@@ -58,14 +61,17 @@ class CreatePlot:
             factual=self.factual,
             cf=self.cf,
             adapted_model=self.adapted_model,
-            feature_names=self.feature_names)
+            feature_names=self.feature_names
+            )
 
         # Plot the greedy search
         fig, ax = make_greedy_plot(
             factual_score=self.factual_score,
             features_data=features_data,
             class_names=self.class_names,
-            save_path=save_path)
+            save_path=save_path,
+            decision_threshold=self.decision_threshold
+            )
         return fig, ax
         return fig, ax
 
@@ -102,7 +108,11 @@ class CreatePlot:
 
         # Plot the countershapley values
         fig, ax = make_countershapley_plot(
-            self.factual_score, features_data, self.class_names, save_path)
+            self.factual_score, 
+            features_data, 
+            self.class_names, 
+            save_path,
+            )
 
         return fig, ax
 
@@ -224,7 +234,8 @@ class CreatePlot:
             cf_score=self.cf_score,
             point_to_pred=point_to_pred,
             save_path=save_path,
-            highlight_changed_feature=highlight_changed_feature
+            highlight_changed_feature=highlight_changed_feature,
+            decision_threshold=self.decision_threshold
         )
 
         return fig, ax
@@ -335,6 +346,7 @@ class CreatePlot:
             class_names=self.class_names,
             cf_score=self.cf_score,
             point_to_pred=point_to_pred,
+            decision_threshold=self.decision_threshold
         )
 
 

@@ -359,7 +359,7 @@ def make_constellation_plot(
     # Plot single change points
     for idx_p, p in enumerate(single_points_chart):
         adapted_feat_ind, score = p
-        color = BLUE_TR if score >= 0.5 else PINK1_TR
+        color = BLUE_TR if score >= decision_threshold else PINK1_TR
         if highlight_changed_feature is not None and highlight_changed_feature != adapted_feat_ind: color=LIGHT_GREY
         plt.scatter(
             [score], 
@@ -385,12 +385,12 @@ def make_constellation_plot(
         scores = multiple_points_chart[:, 1]
         if highlight_changed_feature is None:
             # No specific feature highlighted: keep original sign-based coloring
-            colors = ['#E0423A' if s < 0.5 else 'blue' for s in scores]
+            colors = ['#E0423A' if s < decision_threshold else 'blue' for s in scores]
         else:
             # When highlighting a feature, de-emphasize all coalitions that do not contain it
             colors = [
-                '#E0423A' if s < 0.5 and highlight_changed_feature in f_ind
-                else 'blue' if s >= 0.5 and highlight_changed_feature in f_ind
+                '#E0423A' if s < decision_threshold and highlight_changed_feature in f_ind
+                else 'blue' if s >= decision_threshold and highlight_changed_feature in f_ind
                 else LIGHT_GREY
                 for s, f_ind in zip(scores, adapted_feat_inds_per_point)
             ]
@@ -722,7 +722,8 @@ def make_constellation_plot_dash(
     point_to_pred,
     highlight_feature=None,
     debug=True,
-    port=8050
+    port=8050,
+    decision_threshold=0.5
 ):
     """
     Create and run an interactive constellation plot using Dash.
@@ -740,7 +741,8 @@ def make_constellation_plot_dash(
         class_names=class_names,
         cf_score=cf_score,
         point_to_pred=point_to_pred,
-        highlight_feature=highlight_feature
+        highlight_feature=highlight_feature,
+        decision_threshold=decision_threshold
     )
     
     plot.run(debug=debug, port=port)

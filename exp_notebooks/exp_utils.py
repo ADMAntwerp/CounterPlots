@@ -5,9 +5,10 @@ from counterplots import CreatePlot
 
 class CounterPlotNice(NICE):
 
-    def __init__(self, predict_fn, *args, **kwargs):
+    def __init__(self, predict_fn, decision_threshold=0.5, *args, **kwargs):
         super().__init__(predict_fn, *args, **kwargs)
         self.predict_fn = predict_fn
+        self.decision_threshold=decision_threshold
 
     def explain(self, X, feature_names=None, class_names=None, target_class='other'):
         explanations = super().explain(X, target_class)
@@ -15,22 +16,28 @@ class CounterPlotNice(NICE):
         out_exp = []
 
         for i in range(len(X)):
-            out_exp.append(CreatePlot(factual=X[i],
-                                      cf=explanations[i],
-                                      model_pred=self.predict_fn,
-                                      feature_names=feature_names,
-                                      class_names=class_names))
+            out_exp.append(
+                CreatePlot(
+                    factual=X[i],
+                    cf=explanations[i],
+                    model_pred=self.predict_fn,
+                    feature_names=feature_names,
+                    class_names=class_names,
+                    decision_threshold=self.decision_threshold
+                    )
+            )
 
         return out_exp
 
 
 class counterplot_explainer:
 
-    def __init__(self, cf_generator, feature_names, class_names, model):
+    def __init__(self, cf_generator, feature_names, class_names, model, decision_threshold=.5):
         self.cf_generator = cf_generator
         self.feature_names = feature_names
         self.class_names = class_names
         self.model = model
+        self.decision_threshold=decision_threshold
 
     def explain(self, factual):
         cf = self.cf_generator(factual)
@@ -39,7 +46,9 @@ class counterplot_explainer:
             cf=cf,
             model_pred=self.model,
             feature_names=self.feature_names,
-            class_names=self.class_names)
+            class_names=self.class_names,
+            decision_threshold=self.decision_threshold
+            )
 
         results = exp
         results_cv = results.countershapley_values()
