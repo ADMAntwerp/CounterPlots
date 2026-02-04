@@ -7,22 +7,6 @@ import plotly.graph_objects as go
 from .constellation_plot_dash import ConstellationPlotDash
 from ._COLORS import RED1, BLUE1, PINK1, PINK1_TR, BLUE1, BLUE_TR, LIGHT_GREY, DARK_GREY
 
-def _get_text_width_in_data_co(text, fig, ax):
-    renderer = fig.canvas.get_renderer()
-    fig.canvas.draw()
-
-    bbox = text.get_extents()
-    x0, _ = ax.transData.inverted().transform((bbox.x0, bbox.y0))
-    x1, _ = ax.transData.inverted().transform((bbox.x1, bbox.y0))
-
-    width = x1 - x0
-    return width
-
-
-def _infer_text_orientation(text, fig, ax, w_limit):
-    if _get_text_width_in_data_co(text, fig, ax) > w_limit: return "vertical" 
-    return "horizontal"
-
 
 def _get_text_width_in_data_co(text, fig, ax):
     renderer = fig.canvas.get_renderer()
@@ -34,7 +18,6 @@ def _get_text_width_in_data_co(text, fig, ax):
 
     width = x1 - x0
     return width
-
 
 def _infer_text_orientation(text, fig, ax, w_limit):
     if _get_text_width_in_data_co(text, fig, ax) > w_limit: return "vertical" 
