@@ -84,8 +84,13 @@ def calc_adapted_instance(instance, instance2, _indices):
     return [instance[i] if i not in _indices else instance2[i] for i in range(len(instance))]
 
 
-def generate_contribution_graph(instance1: [], instance2: [], model, indices_feature_diff,
-                                class_of_interest_index=0) -> {}:
+def generate_contribution_graph(
+    instance1: [], 
+    instance2: [], 
+    model, 
+    indices_feature_diff,
+    class_of_interest_index=0
+    ) -> {}:
     """
     Changes all possible combinations of features of instance1 and calculates the prediction value.
     The features to be changed are given by index by :arg indices_feature_diff: and are changed to the values as they
@@ -151,8 +156,12 @@ def calc_shapley_values_between(instance1, instance2, model, class_of_interest_i
 
     # where counterfactual is different from factual
     indices_feature_diff = np.where(instance1 != instance2)[-1]
-    shapley_graph = generate_contribution_graph(instance1, instance2, model, indices_feature_diff,
-                                                class_of_interest_index)
+    shapley_graph = generate_contribution_graph(
+        instance1, 
+        instance2, 
+        model, 
+        indices_feature_diff,
+        class_of_interest_index)
 
     feature_contributions = []
     for feature in indices_feature_diff:
