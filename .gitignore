@@ -5,6 +5,8 @@
 *.gif
 *.pdf
 
+!_static/*.png
+
 #  PyCharm Project
 .idea/
 
