@@ -18,7 +18,9 @@ class CreatePlot:
             cf: np.ndarray,
             model_pred: Callable,
             feature_names: List[str] = None,
-            class_names: Dict[int, str] = None):
+            class_names: Dict[int, str] = None,
+            sample_size=None
+            ):
 
         # If feature_names is not provided, create it
         if feature_names is None:
@@ -33,6 +35,24 @@ class CreatePlot:
         self.cf = np.array(cf)
         self.feature_names = feature_names
         self.class_names = class_names
+        self.sample_size=sample_size
+        self.idx_feat_diff = np.where(self.factual != self.cf)[0]
+        self.adapted_model, self.class_names = create_adapted_model_and_class(
+            factual=factual,
+            model_pred=model_pred,
+            class_names=class_names
+        )
+        # Calculate all model scores for all subcoalitions or a sample thereof
+        self.feat_contributions, self.adapted_feat_idxs, self.contribution_graph = calc_shapley_values_between(
+            instance1 = self.factual,
+            instance2 = self.cf,
+            model=self.adapted_model,
+            sample_size=self.sample_size,
+            return_contribution_graph=True
+        )
+        
+        self.factual_score = self.contribution_graph[()]
+        self.cf_score = self.contribution_graph[tuple(self.idx_feat_diff)]
 
         # Make verifications
         verify_factual_counterfactual_shape(factual, cf)
@@ -42,15 +62,6 @@ class CreatePlot:
         verify_binary_class(model_pred, factual)
         verify_class_names(class_names)
 
-        # Adapt model and class names
-        self.adapted_model, self.class_names = create_adapted_model_and_class(
-            factual=factual,
-            model_pred=model_pred,
-            class_names=class_names)
-
-        self.factual_score = round(self.adapted_model(
-            self.factual.reshape(1, -1))[0], 2)
-        self.cf_score = round(self.adapted_model(self.cf.reshape(1, -1))[0], 2)
 
     def greedy(self, save_path: str = None):
         # Make a greedy search to find the best feature to change
@@ -70,17 +81,11 @@ class CreatePlot:
 
     def countershapley(self, save_path: str = None):
 
-        feat_contributions, feat_modified = calc_shapley_values_between(
-            instance1=self.factual,
-            instance2=self.cf,
-            model=self.adapted_model,
-            class_of_interest_index=0)
-
         # Create data for countershapley plot
-        sum_contributions = np.sum(feat_contributions)
+        sum_contributions = np.sum(self.feat_contributions)
         current_score = self.factual_score
         features_data = []
-        for feat, contrib in zip(feat_modified, feat_contributions):
+        for feat, contrib in zip(self.adapted_feat_idxs, self.feat_contributions):
             current_score += contrib
 
             factual_raw_value = self.factual[feat]
@@ -101,21 +106,19 @@ class CreatePlot:
 
         # Plot the countershapley values
         fig, ax = make_countershapley_plot(
-            self.factual_score, features_data, self.class_names, save_path)
+            round(self.factual_score, 2), 
+            features_data, 
+            self.class_names, 
+            save_path
+            )
 
         return fig, ax
 
     def countershapley_values(self):
-        feat_contributions, feat_modified = calc_shapley_values_between(
-            instance1=self.factual,
-            instance2=self.cf,
-            model=self.adapted_model,
-            class_of_interest_index=0)
-
         return {
-            'feature_names': [self.feature_names[feat] for feat in feat_modified],
-            'feature_values': feat_contributions,
-            'feature_indices': feat_modified
+            'feature_names': [self.feature_names[feat] for feat in self.adapted_feat_idxs],
+            'feature_values': self.feat_contributions,
+            'feature_indices': self.adapted_feat_idxs
         }
 
     def constellation(self, save_path: str = None, highlight_changed_feature=None):
@@ -133,21 +136,15 @@ class CreatePlot:
         Returns:
             tuple: (fig, ax) matplotlib figure and axis objects
         """
-
-        # Get the index of the features that are different between the factual and counterfactual
-        idx_feat_diff = np.where(self.factual != self.cf)[0]
-
         # Constellation need at least 2 features to be different
-        if len(idx_feat_diff) < 2:
+        if len(self.idx_feat_diff) < 2:
             print(
                 'Showing greedy plot since constellation needs at least 2 features to be different')
             self.greedy(save_path)
             return
 
         text_features = []
-        for i in idx_feat_diff:
-
-            # Adjust text of modification values
+        for i in self.idx_feat_diff:
             factual_raw_value = self.factual[i]
             cf_value = self.cf[i]
 
@@ -159,35 +156,17 @@ class CreatePlot:
             text_features.append(
                 f'{self.feature_names[i]} ({factual_feat_text}➜{cf_feat_text})')
 
-        # Create all possible combinations from 1 to the number of features that are different - 1
-        idx_feat_comb = [list(combinations(idx_feat_diff, i)) for i in range(1, len(idx_feat_diff))]
-        idx_feat_comb = [item for sublist in idx_feat_comb for item in sublist]
-
-        # Dataset with modified points
-        points_mod = np.array([self.factual] * len(idx_feat_comb))
-
-        # Make the changes to the points
-        points_mod = np.array([
-            np.array([
-                points_mod[i][j] if j not in idx_feat_comb[i] else self.cf[j]
-                for j in range(len(self.factual))]) for i in range(len(idx_feat_comb)
-            )]
-        )
-
-        # Get points predictions
-        points_pred = self.adapted_model(points_mod)
-
         # Get single points with single change and their predictions - These are plotted larger
         single_points = np.array([
-            [comb[0], points_pred[idx]] 
-            for idx, comb in enumerate(idx_feat_comb) 
+            [comb[0], self.contribution_graph[comb]] 
+            for comb in self.contribution_graph.keys()
             if len(comb) == 1
         ])
 
         # Get multiple points with multiple changes and their predictions - these are plotted smaller
         multiple_points = np.array([
-            [comb, points_pred[idx]] 
-            for idx, comb in enumerate(idx_feat_comb) 
+            [comb, self.contribution_graph[comb]] 
+            for comb in self.contribution_graph.keys()
             if len(comb) > 1
         ], dtype=object)
 

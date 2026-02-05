@@ -9,28 +9,34 @@ class CounterPlotNice(NICE):
         super().__init__(predict_fn, *args, **kwargs)
         self.predict_fn = predict_fn
 
-    def explain(self, X, feature_names=None, class_names=None, target_class='other'):
+    def explain(self, X, feature_names=None, class_names=None, target_class='other', sample_size=None):
         explanations = super().explain(X, target_class)
 
         out_exp = []
 
         for i in range(len(X)):
-            out_exp.append(CreatePlot(factual=X[i],
-                                      cf=explanations[i],
-                                      model_pred=self.predict_fn,
-                                      feature_names=feature_names,
-                                      class_names=class_names))
+            out_exp.append(
+                CreatePlot(
+                    factual=X[i],
+                    cf=explanations[i],
+                    model_pred=self.predict_fn,
+                    feature_names=feature_names,
+                    class_names=class_names,
+                    sample_size=sample_size
+                )
+            )
 
         return out_exp
 
 
 class counterplot_explainer:
 
-    def __init__(self, cf_generator, feature_names, class_names, model):
+    def __init__(self, cf_generator, feature_names, class_names, model, sample_size=None):
         self.cf_generator = cf_generator
         self.feature_names = feature_names
         self.class_names = class_names
         self.model = model
+        self.sample_size = sample_size
 
     def explain(self, factual):
         cf = self.cf_generator(factual)
@@ -39,7 +45,9 @@ class counterplot_explainer:
             cf=cf,
             model_pred=self.model,
             feature_names=self.feature_names,
-            class_names=self.class_names)
+            class_names=self.class_names,
+            sample_size=self.sample_size
+        )
 
         results = exp
         results_cv = results.countershapley_values()
