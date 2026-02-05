@@ -1,5 +1,5 @@
 from itertools import combinations
-
+from math import factorial
 import numpy as np
 
 
@@ -78,13 +78,6 @@ def greedy_strategy(factual, cf, adapted_model, feature_names):
         ordered_features = np.append(ordered_features, best_feature)
 
     return features_data
-
-
-def factorial(n):
-    if n == 0:
-        return 1
-    else:
-        return n * factorial(n - 1)
 
 
 def calc_adapted_instance(instance, instance2, _indices):
