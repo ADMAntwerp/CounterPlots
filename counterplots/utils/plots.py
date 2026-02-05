@@ -462,8 +462,9 @@ def make_constellation_plot_dash(
     class_names, 
     cf_score, 
     point_to_pred,
-    port=8050,
     decision_threshold=0.5,
+    port=8050,
+    debug=False,
 ):
     """
     Create and run an interactive constellation plot using Dash.
@@ -484,5 +485,5 @@ def make_constellation_plot_dash(
         decision_threshold=decision_threshold,
     )
     
-    plot.run(port=port)
+    plot.run(port=port, debug=debug)
     return plot

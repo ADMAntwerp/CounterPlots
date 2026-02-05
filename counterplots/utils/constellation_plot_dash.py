@@ -1,6 +1,7 @@
 import numpy as np
 from dash import Dash, dcc, html, Input, Output, State, callback_context
 import plotly.graph_objects as go
+import re
 from ._COLORS import RED1, BLUE1, PINK1, BLUE1, LIGHT_GREY, DARK_GREY
 
 class ConstellationPlotDash:
@@ -280,20 +281,27 @@ class ConstellationPlotDash:
     def _setup_layout(self):
         """Setup the Dash app layout."""
         self.app.layout = html.Div([
-            html.H2("Interactive Constellation Plot", style={'textAlign': 'center'}),
+            html.H2(
+                "Interactive Constellation Plot", 
+                style={'textAlign': 'center'}),
             html.Div([
-                html.Button('Reset Selection', id='reset-button', n_clicks=0,
-                           style={'marginBottom': '10px'})
+                html.Button(
+                    'Reset Selection', 
+                    id='reset-button', 
+                    n_clicks=0,
+                    ),
             ], style={'textAlign': 'center'}),
             dcc.Graph(
                 id='constellation-plot',
                 figure=self._create_base_figure(),
                 config={'displayModeBar': True}
             ),
-            html.Div(id='selected-coalition', style={'textAlign': 'center', 'marginTop': '10px'}),
+            html.Div(id='selected-coalition', style={'textAlign': 'center'}),
             # Hidden div to store selected coalition
             html.Div(id='selected-coalition-store', style={'display': 'none'})
-        ])
+        ],
+        style={"backgroundColor": "white"}
+        )
     
     def _setup_callbacks(self):
         """Setup Dash callbacks for interactivity."""
@@ -331,15 +339,17 @@ class ConstellationPlotDash:
                         selected_coalition_idx = None
                     else:
                         # Select coalition
-                        fig = self._create_base_figure(selected_coalition=selected_coalition_idx, is_single=False)
-                        features_str = ', '.join(map(str, self.coalition_info[selected_coalition_idx]))
-                        message = f"Selected Coalition: Features [{features_str}]"
+                        fig = self._create_base_figure(selected_coalition=selected_coalition_idx)
+                        features_str = ", ".join([
+                            re.sub(" \(.*\)", "", self.text_features[e])
+                            for e in self.coalition_info[selected_coalition_idx]])
+                        message = f"Selected feature changes: ({features_str})"
                     
                     return fig, message, selected_coalition_idx
         
             # No change
             return self._create_base_figure(), "", None
     
-    def run(self, port=8050):
+    def run(self, port=8050, debug=False):
         """Run the Dash app."""
-        self.app.run(port=port)
+        self.app.run(port=port, debug=debug)
