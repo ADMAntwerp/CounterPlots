@@ -1,6 +1,11 @@
 from itertools import combinations
-from math import factorial
+from functools import lru_cache
 import numpy as np
+from math import factorial
+from .approx import get_subcoalitions_sample
+import logging
+logging.basicConfig()
+logger = logging.getLogger(__name__)
 
 
 def create_adapted_model_and_class(factual, model_pred, class_names):
@@ -81,15 +86,56 @@ def greedy_strategy(factual, cf, adapted_model, feature_names):
 
 
 def calc_adapted_instance(instance, instance2, _indices):
-    return [instance[i] if i not in _indices else instance2[i] for i in range(len(instance))]
+    return np.asarray([instance[i] if i not in _indices else instance2[i] for i in range(len(instance))])
 
 
-def generate_contribution_graph(
+def _bitfield2d(n):
+    return np.array([
+        [
+            (i >> bit) & 1 
+            for bit in range(len(n))
+        ] 
+        for i in all_indices
+        ])
+
+
+def _get_subcoalitions(indices_feature_diff):
+    # return all subcoalitions
+    return [
+        subset 
+        for L in range(0, len(indices_feature_diff) + 1)
+        for subset in combinations(indices_feature_diff, L)
+    ]
+
+def _array_key(arr: np.ndarray):
+    """Convert a numpy array to a reconstructable, but hashable object"""
+    return (arr.dtype.str, arr.shape, arr.tobytes())
+
+
+def get_model_prediction(changed_instance, model, class_of_interest_index):
+    """Wrapper function to get the model prediction of an adapted instance, where the input instances
+    are first converted to reconstructable, but hashable (and therefore cachable) objects"""
+    return _get_model_prediction_cached(
+        _array_key(changed_instance),
+        model,
+        class_of_interest_index
+    )
+
+
+@lru_cache(maxsize=None)
+def _get_model_prediction_cached(changed_instance_key, model, class_of_interest_index):
+    """Reconstruct numpy arrays from their key and run model inference, or fetch it from cache"""
+    changed_instance = np.frombuffer(changed_instance_key[2], dtype=changed_instance_key[0]).reshape(changed_instance_key[1])
+    return model([changed_instance])[class_of_interest_index]
+
+
+def calc_contribution_graph(
     instance1: [], 
     instance2: [], 
     model, 
     indices_feature_diff,
-    class_of_interest_index=0
+    class_of_interest_index=0,
+    sample_kwargs=None
     ) -> {}:
     """
     Changes all possible combinations of features of instance1 and calculates the prediction value.
@@ -109,18 +155,54 @@ def generate_contribution_graph(
     subset
     """
     contribution_graph = {}
-    # different lengths of subsets of features
-    for L in range(0, len(indices_feature_diff) + 1):
-        for subset in combinations(indices_feature_diff, L):
-            changed_instance = calc_adapted_instance(
-                instance1, instance2, subset)
-            # you now iterate all possible feature combinations of length L
-            prediction = model([changed_instance])[class_of_interest_index]
-            contribution_graph[subset] = prediction
+    if sample_kwargs is None:
+        # Generate all subcoalitions
+        subcoalitions = _get_subcoalitions(indices_feature_diff)
+    else:
+        # Sample subcoalitions
+        sample_size = sample_kwargs['n']
+        ensure_outer_edges = sample_kwargs.get("ensure_outer_edges", True)
+        subcoalitions = get_subcoalitions_sample(indices_feature_diff, sample_size=sample_size, ensure_outer_edges=ensure_outer_edges)
+        logger.debug("Sampled {} unique coalitions".format(len(subcoalitions)))
+    for subcoalition in subcoalitions:
+        changed_instance = calc_adapted_instance(instance1, instance2, subcoalition)
+        prediction = get_model_prediction(changed_instance, model, class_of_interest_index)
+        contribution_graph[subcoalition] = prediction
     return contribution_graph
 
+def get_shapley_feature_contribution(contribution_graph: dict, feature_index: int):
+    """
+    Calculate the Shapley contribution of a single feature.
+    """
+    # number of players
+    n = max(len(S) for S in contribution_graph)
 
-def calc_shapley_values_between(instance1, instance2, model, class_of_interest_index=0):
+    # precompute Shapley weights by coalition size
+    weights = {
+        k: factorial(k) * factorial(n - k - 1) / factorial(n)
+        for k in range(n)
+    }
+
+    contribution = 0.0
+    for S, v_S in contribution_graph.items():
+        if feature_index in S: continue
+        S_with_i = tuple(sorted((*S, feature_index)))
+        v_S_i = contribution_graph.get(S_with_i)
+        if v_S_i is None: continue
+        k = len(S)
+        contribution += (v_S_i - v_S) * weights[k]
+
+    return contribution
+
+
+def calc_shapley_values_between(
+    instance1, 
+    instance2, 
+    model, 
+    class_of_interest_index=0,
+    sample_kwargs = None,
+    return_contribution_graph = False,
+    ):
     """
     Calculates shapley values between some instance and another instance, where the differences
     :param instance1: 1-dimensional array: The first instance (factual)
@@ -129,47 +211,28 @@ def calc_shapley_values_between(instance1, instance2, model, class_of_interest_i
     :param class_of_interest_index: The index of the target class of interest. Generally equals 0
     :return: feature_contributions, indices
     """
-
-    def get_shapley_feature_contribution(_shapley_graph: {}, feature_index: int):
-        # amount of features/players
-        n = max([len(node) for node in _shapley_graph])
-        ordered_nodes = [[node for node in _shapley_graph if len(node) == i]
-                         for i in range(n+1)]
-        contributions_feature_i = []
-        for i in range(len(ordered_nodes) - 1):
-            row1 = ordered_nodes[i]
-            row2 = [node for node in ordered_nodes[i + 1]
-                    if feature_index in node]
-            size = len(row1[0])  # |S|, i.e. the size of the set S
-            for node_w_feature in row2:
-                remainder = [e for e in node_w_feature if e != feature_index]
-                backlink = [node for node in row1 if all(
-                    [i in node for i in remainder])][0]
-                # contribution of adding feature i
-                marginal_contr = shapley_graph[node_w_feature] - \
-                    shapley_graph[backlink]
-                marginal_contr_norm = marginal_contr * \
-                    factorial(size) * factorial(n-size-1) / factorial(n)
-                contributions_feature_i.append(marginal_contr_norm)
-        # sum all contributions over all sets S
-        return np.sum(contributions_feature_i)
-
     # where counterfactual is different from factual
     indices_feature_diff = np.where(instance1 != instance2)[-1]
-    shapley_graph = generate_contribution_graph(
-        instance1, 
-        instance2, 
-        model, 
-        indices_feature_diff,
-        class_of_interest_index)
+    contribution_graph = calc_contribution_graph(
+        instance1=instance1, 
+        instance2=instance2, 
+        model=model, 
+        indices_feature_diff=indices_feature_diff,
+        class_of_interest_index=class_of_interest_index,
+        sample_kwargs=sample_kwargs
+    )
 
     feature_contributions = []
     for feature in indices_feature_diff:
-        contr = get_shapley_feature_contribution(shapley_graph, feature)
+        contr = get_shapley_feature_contribution(contribution_graph, feature)
         feature_contributions.append(contr)
-    feature_contributions, ind = zip(
-        *sorted(zip(feature_contributions, indices_feature_diff)))
-    return feature_contributions[::-1], ind[::-1]
+    # sort based on their contribution, large to small
+    feature_contributions, feature_idx_sorted = zip(
+        *sorted(zip(feature_contributions, indices_feature_diff))[::-1]
+        )
+    if return_contribution_graph: 
+        return feature_contributions, feature_idx_sorted, contribution_graph
+    return feature_contributions, feature_idx_sorted
 
 
 def _format_e(x):
