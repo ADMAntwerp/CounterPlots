@@ -3,7 +3,7 @@ from functools import lru_cache
 import numpy as np
 from multiprocessing import Pool, cpu_count
 from math import factorial
-from .approx import get_subcoalitions_sample
+from .approx import _get_subcoalitions_sample
 import logging
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -97,7 +97,7 @@ def calc_adapted_instance(instance, instance2, _indices):
     return np.asarray([instance[i] if i not in _indices else instance2[i] for i in range(len(instance))])
 
 
-def _get_subcoalitions(indices_feature_diff):
+def _get_all_subcoalitions(indices_feature_diff):
     # return all subcoalitions
     return [
         subset 
@@ -108,9 +108,9 @@ def _get_subcoalitions(indices_feature_diff):
 
 def _generate_subcoalitions(indices_feature_diff, sample_kwargs):
     if sample_kwargs is None:
-        return _get_subcoalitions(indices_feature_diff)
+        return _get_all_subcoalitions(indices_feature_diff)
 
-    return get_subcoalitions_sample(
+    return _get_subcoalitions_sample(
         indices_feature_diff,
         sample_size=sample_kwargs["n"],
         ensure_outer_edges=sample_kwargs.get("ensure_outer_edges", True),

@@ -136,7 +136,7 @@ def sample_random_edges(features, sample_size, rng=None):
     return start_nodes, end_nodes
 
 
-def get_subcoalitions_sample(
+def _get_subcoalitions_sample(
     features, 
     sample_size, 
     rng=None,
