@@ -9,34 +9,33 @@ logger = logging.getLogger(__name__)
 
 
 def create_adapted_model_and_class(factual, model_pred, class_names):
-    """ Adapts the model to return a single class, factual class is also always 0
-
-    Args:
-        factual (np.ndarray): Factual instance
-        model_pred (object): Model prediction function
-
-    Returns:
-        obejct: Adapted model prediction function
     """
-    pred_test = np.array(model_pred(np.array([factual])))
-    if len(pred_test.shape) == 2:
-        # If model has two classes, return the probability of the second class (1)
-        if pred_test.shape[1] == 2:
-            def adapted_model(x): return np.array(model_pred(x))[:, 1] if pred_test[0][1] < 0.5 else np.array(
-                model_pred(x))[:, 0]
-            adapted_class = {0: class_names[0], 1: class_names[1]} if pred_test[0][1] < 0.5 else {0: class_names[1],
-                                                                                                  1: class_names[0]}
-        else:
-            def adapted_model(x): return np.array(model_pred(x))[:, 0] if pred_test[0][0] < 0.5 else 1 - np.array(
-                model_pred(x))[:, 0]
-            adapted_class = {0: class_names[0], 1: class_names[1]} if pred_test[0][0] < 0.5 else {0: class_names[1],
-                                                                                                  1: class_names[0]}
-        return adapted_model, adapted_class
+    Adapts the model to return a single class (factual class always mapped to 0).
+    """
+    pred = np.array(model_pred(np.array([factual])))
 
-    def adapted_model(x): return np.array(model_pred(
-        x)) if pred_test[0] < 0.5 else 1 - np.array(model_pred(x))
-    adapted_class = {0: class_names[0], 1: class_names[1]} if pred_test[0] < 0.5 else {0: class_names[1],
-                                                                                       1: class_names[0]}
+    # determine which probability column/value to use
+    if pred.ndim == 2:
+        col = 1 if pred.shape[1] == 2 else 0
+        factual_prob = pred[0, col]
+    else:
+        col = None
+        factual_prob = pred[0]
+
+    invert = factual_prob >= 0.5
+
+    def adapted_model(x):
+        p = np.array(model_pred(x))
+        if col is not None:
+            p = p[:, col]
+        return 1 - p if invert else p
+
+    adapted_class = (
+        {0: class_names[1], 1: class_names[0]}
+        if invert
+        else {0: class_names[0], 1: class_names[1]}
+    )
+
     return adapted_model, adapted_class
 
 
