@@ -1,20 +1,30 @@
 from itertools import combinations
 from functools import lru_cache
 import numpy as np
+from multiprocessing import Pool, cpu_count
 from math import factorial
 from .approx import get_subcoalitions_sample
 import logging
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 
+MULTIPROCESS_MIN_SIZE = 6  # CFE dimension at which it starts making sense to parallellize
+
+class AdaptedModel:
+    def __init__(self, model_pred, col, invert):
+        self.model_pred = model_pred
+        self.col = col
+        self.invert = invert
+
+    def __call__(self, x):
+        p = np.array(self.model_pred(x))
+        if self.col is not None:
+            p = p[:, self.col]
+        return 1 - p if self.invert else p
 
 def create_adapted_model_and_class(factual, model_pred, class_names):
-    """
-    Adapts the model to return a single class (factual class always mapped to 0).
-    """
     pred = np.array(model_pred(np.array([factual])))
 
-    # determine which probability column/value to use
     if pred.ndim == 2:
         col = 1 if pred.shape[1] == 2 else 0
         factual_prob = pred[0, col]
@@ -24,11 +34,11 @@ def create_adapted_model_and_class(factual, model_pred, class_names):
 
     invert = factual_prob >= 0.5
 
-    def adapted_model(x):
-        p = np.array(model_pred(x))
-        if col is not None:
-            p = p[:, col]
-        return 1 - p if invert else p
+    adapted_model = AdaptedModel(
+        model_pred=model_pred,
+        col=col,
+        invert=invert,
+    )
 
     adapted_class = (
         {0: class_names[1], 1: class_names[0]}
@@ -95,6 +105,18 @@ def _get_subcoalitions(indices_feature_diff):
         for subset in combinations(indices_feature_diff, L)
     ]
 
+
+def _generate_subcoalitions(indices_feature_diff, sample_kwargs):
+    if sample_kwargs is None:
+        return _get_subcoalitions(indices_feature_diff)
+
+    return get_subcoalitions_sample(
+        indices_feature_diff,
+        sample_size=sample_kwargs["n"],
+        ensure_outer_edges=sample_kwargs.get("ensure_outer_edges", True),
+    )
+
+
 def _array_key(arr: np.ndarray):
     """Convert a numpy array to a reconstructable, but hashable object"""
     return (arr.dtype.str, arr.shape, arr.tobytes())
@@ -118,45 +140,120 @@ def _get_model_prediction_cached(changed_instance_key, predict_fn, class_of_inte
     return pred
 
 
-def calc_contribution_graph(
-    instance1, 
-    instance2, 
-    predict_fn, 
-    indices_feature_diff,
-    class_of_interest_index=0,
-    sample_kwargs=None
-    ) -> dict:
-    """
-    Changes all possible combinations of features of instance1 and calculates the prediction value.
-    The features to be changed are given by index by :arg indices_feature_diff: and are changed to the values as they
-    appear on these positions in :arg instance2:
+def _evaluate_subcoalition(
+    subcoalition,
+    instance1,
+    instance2,
+    predict_fn,
+    class_of_interest_index
+    ):
+    changed_instance = calc_adapted_instance(instance1, instance2, subcoalition)
+    prediction = get_model_prediction(
+        changed_instance, predict_fn, class_of_interest_index
+    )
+    return subcoalition, prediction
 
-    :param instance1: The instance to be changed on certain features
-    :param instance2: The instance whose values the features will be changed to
-    :param predict_fn: The predict_fn, scoring the instance (must contain a predict_proba() method)
-    :param indices_feature_diff: The indices of the features whose value in :arg instance1: need to be changed to the
-    values as they appear in :arg instance2: at the same index
-    :param class_of_interest_index: predict_proba() predicts an outcome for each class. Pass the index of the class of
-    relevance here
 
-    :return: Dict: dictionary whose keys are the subset of features (some combination out of :arg indices_feature_diff:)
-    and whose values are the prediction value of :arg instance1:, but with adapted features on the indices of said
-    subset
-    """
+def _calc_contribution_graph_serial(
+    subcoalitions,
+    instance1,
+    instance2,
+    predict_fn,
+    class_of_interest_index,
+    ):
     contribution_graph = {}
-    if sample_kwargs is None:
-        # Generate all subcoalitions
-        subcoalitions = _get_subcoalitions(indices_feature_diff)
-    else:
-        # Sample subcoalitions
-        sample_size = sample_kwargs['n']
-        ensure_outer_edges = sample_kwargs.get("ensure_outer_edges", True)
-        subcoalitions = get_subcoalitions_sample(indices_feature_diff, sample_size=sample_size, ensure_outer_edges=ensure_outer_edges)
-        logger.debug("Sampled {} unique coalitions".format(len(subcoalitions)))
+
     for subcoalition in subcoalitions:
-        changed_instance = calc_adapted_instance(instance1, instance2, subcoalition)
-        prediction = get_model_prediction(changed_instance, predict_fn, class_of_interest_index)
-        contribution_graph[subcoalition] = prediction
+        changed_instance = calc_adapted_instance(
+            instance1, instance2, subcoalition
+        )
+        contribution_graph[subcoalition] = get_model_prediction(
+            changed_instance,
+            predict_fn,
+            class_of_interest_index,
+        )
+
+    return contribution_graph
+
+
+def _calc_contribution_graph_parallel(
+    subcoalitions,
+    instance1,
+    instance2,
+    predict_fn,
+    class_of_interest_index,
+    cpu_count_,
+    ):
+    with Pool(cpu_count_) as pool:
+        results = pool.starmap(
+            _evaluate_subcoalition,
+            [
+                (sc, instance1, instance2, predict_fn, class_of_interest_index)
+                for sc in subcoalitions
+            ],
+        )
+
+    return dict(results)
+
+
+def calc_contribution_graph(
+    instance1,
+    instance2,
+    predict_fn,
+    class_of_interest_index=0,
+    sample_kwargs=None,
+    multiproc_kwargs=None
+    ):
+    """Calculate the contribution graph
+
+    A contribution graph is a dictionary that maps each subcoalition of 
+    feature changes to their corresponding score.
+    The possible feature changes are constructed based on the differences between
+    :param:`instance1` and :param:`instance2`.
+
+    This is generated once, and subcoalition comparisons for the calculation
+    of Shapley values is fetched from this dictionary.
+    If you pass :param:`sample_kwargs`, the contribution graph is sampled,
+    rather than calculated exactly.
+
+    Args:
+        instance1 (np.ndarray): The baseline instance. Usually the factual instance.
+        instance2 (np.ndarray): The counterfactual instance.
+        predict_fn (Callable): A function that takes an instance an produces a prediction score.
+        
+    """
+    indices_feature_diff = np.where(instance1 != instance2)[-1]
+    cf_size = len(indices_feature_diff)
+
+    # --- multiprocessing defaults ---
+    if multiproc_kwargs is None:
+        multiproc_kwargs = {
+            "min_size": MULTIPROCESS_MIN_SIZE,
+            "cpu_count": cpu_count(),
+        }
+
+    subcoalitions = _generate_subcoalitions(
+        indices_feature_diff,
+        sample_kwargs,
+    )
+
+    if cf_size < multiproc_kwargs['min_size']:
+        return _calc_contribution_graph_serial(
+            subcoalitions=subcoalitions,
+            instance1=instance1,
+            instance2=instance2,
+            predict_fn=predict_fn,
+            class_of_interest_index=class_of_interest_index
+        )
+    else:
+        return _calc_contribution_graph_parallel(
+            subcoalitions=subcoalitions,
+            instance1=instance1,
+            instance2=instance2,
+            predict_fn=predict_fn,
+            class_of_interest_index=class_of_interest_index,
+            cpu_count_=multiproc_kwargs['cpu_count']
+        )
     return contribution_graph
 
 def get_shapley_feature_contribution(contribution_graph: dict, feature_index: int):
@@ -190,6 +287,7 @@ def calc_shapley_values_between(
     predict_fn, 
     class_of_interest_index=0,
     sample_kwargs = None,
+    multiproc_kwargs=None
     ):
     """
     Calculates shapley values between some instance and another instance, where the differences
@@ -205,9 +303,9 @@ def calc_shapley_values_between(
         instance1=instance1, 
         instance2=instance2, 
         predict_fn=predict_fn, 
-        indices_feature_diff=indices_feature_diff,
         class_of_interest_index=class_of_interest_index,
-        sample_kwargs=sample_kwargs
+        sample_kwargs=sample_kwargs,
+        multiproc_kwargs=multiproc_kwargs
     )
 
     feature_contributions = []
