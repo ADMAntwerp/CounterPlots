@@ -147,7 +147,6 @@ def _get_subcoalitions_sample(
     if rng is None:
         rng = np.random.default_rng()
     if isinstance(sample_size, float):
-        
         sample_size  = int(sample_size * max_n_edges)
         if sample_size < len(features):
             logger.warning(f"The provided sample size {sample_size} is too small to evenly sample {n_features} features. Setting it to the minimum of {n_features} instead.")
