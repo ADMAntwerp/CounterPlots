@@ -56,7 +56,7 @@ class CreatePlot:
         self.decision_threshold = decision_threshold
         self.sample_kwargs = sample_kwargs
         self.idx_feat_diff = np.where(self.factual != self.cf)[0]
-        self.adapted_model, self.class_names = create_adapted_model_and_class(
+        self.predict_fn, self.class_names = create_adapted_model_and_class(
             factual=factual,
             model_pred=model_pred,
             class_names=class_names
@@ -65,7 +65,7 @@ class CreatePlot:
         self.feat_contributions, self.adapted_feat_idxs, self.contribution_graph = calc_shapley_values_between(
             instance1 = self.factual,
             instance2 = self.cf,
-            model=self.adapted_model,
+            predict_fn=self.predict_fn,
             sample_kwargs=self.sample_kwargs,
             return_contribution_graph=True
         )
@@ -86,7 +86,7 @@ class CreatePlot:
         features_data = greedy_strategy(
             factual=self.factual,
             cf=self.cf,
-            adapted_model=self.adapted_model,
+            predict_fn=self.predict_fn,
             feature_names=self.feature_names
             )
 
@@ -269,7 +269,7 @@ class CreatePlot:
         )
 
         # Get points predictions
-        points_pred = self.adapted_model(points_mod)
+        points_pred = self.predict_fn(points_mod)
 
         # Get single points with single change and their predictions - These are plotted larger
         single_points = np.array([
