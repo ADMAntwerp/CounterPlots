@@ -2,6 +2,10 @@ from itertools import combinations
 from functools import lru_cache
 import numpy as np
 from math import factorial
+from .approx import get_subcoalitions_sample
+import logging
+logging.basicConfig()
+logger = logging.getLogger(__name__)
 
 
 def create_adapted_model_and_class(factual, model_pred, class_names):
@@ -103,46 +107,6 @@ def _get_subcoalitions(indices_feature_diff):
         for subset in combinations(indices_feature_diff, L)
     ]
 
-
-def _get_subcoalitions_sample(indices_feature_diff, sample_size):
-    """Sample a subset of subcoalitions, ensuring for each subcoalition, 
-    there is at least one other subcoaltion that differs by a single feature.
-    
-    Attention:
-        These subcoalitions are NOT guaranteed to be unique.
-        It is possible for the same coalition to be sampled for different feature indices.
-        E.g. (A, B, C) can be sampled to measure (A, B) - (A, B, C), and again to measure (B, C) - (A, B, C)
-
-        The focus of this function is to guarantee each sample has at least one parent or child so that it is useful
-        for Shapley value calculation. Whether these parents or children are duplicates is of less concern.
-
-    Raises:
-        AssertionError: If the amount of requested samples exceeds the total amount of combinations. Just use exact calculation then.
-    """
-    assert sample_size < 2**len(indices_feature_diff), f"You are taking {sample_size} samples, but there are fewer possible combinations (2^{len(indices_feature_diff)} = {2**len(indices_feature_diff)})."
-    n_feats = len(indices_feature_diff)
-    n_samples_per_feat = int(np.ceil(sample_size / n_feats))
-    indices_feature_diff = np.asarray(indices_feature_diff)
-    subcoalitions = []
-    subcoalitions.extend([tuple(), tuple(indices_feature_diff)])  # ensure at least the factual and cf are in here
-    for feat in indices_feature_diff:                                       # O(k)
-        # features excluding the current one
-        subc_wo_feat = indices_feature_diff[indices_feature_diff != feat]   # O(k)
-        
-        m = len(subc_wo_feat)
-        max_masks = 2 ** m
-        n = min(n_samples_per_feat, max_masks)
-        masks = np.random.choice(max_masks, n, replace=False)           
-        bitmasks = ((masks[:, None] >> np.arange(m)) & 1).astype(bool)
-        for mask in bitmasks:                                               # O(n_samples_per_feat) = O(N) / k
-            subc1 = subc_wo_feat[mask]
-            # Create version WITH feat and sort (sorting is important so the cache recognizes same input)
-            subc2 = np.insert(subc1, np.searchsorted(subc1, feat), feat)    # O(k)
-            subcoalitions.append(tuple(subc1))
-            subcoalitions.append(tuple(subc2))
-    
-    return subcoalitions
-
 def _array_key(arr: np.ndarray):
     """Convert a numpy array to a reconstructable, but hashable object"""
     return (arr.dtype.str, arr.shape, arr.tobytes())
@@ -171,7 +135,7 @@ def calc_contribution_graph(
     model, 
     indices_feature_diff,
     class_of_interest_index=0,
-    sample_size=None
+    sample_kwargs=None
     ) -> {}:
     """
     Changes all possible combinations of features of instance1 and calculates the prediction value.
@@ -191,49 +155,20 @@ def calc_contribution_graph(
     subset
     """
     contribution_graph = {}
-    if sample_size is None:
+    if sample_kwargs is None:
         # Generate all subcoalitions
         subcoalitions = _get_subcoalitions(indices_feature_diff)
     else:
         # Sample subcoalitions
-        subcoalitions = _get_subcoalitions_sample(indices_feature_diff, sample_size=sample_size)
+        sample_size = sample_kwargs['n']
+        ensure_outer_edges = sample_kwargs.get("ensure_outer_edges", True)
+        subcoalitions = get_subcoalitions_sample(indices_feature_diff, sample_size=sample_size, ensure_outer_edges=ensure_outer_edges)
+        logger.debug("Sampled {} unique coalitions".format(len(subcoalitions)))
     for subcoalition in subcoalitions:
         changed_instance = calc_adapted_instance(instance1, instance2, subcoalition)
         prediction = get_model_prediction(changed_instance, model, class_of_interest_index)
         contribution_graph[subcoalition] = prediction
     return contribution_graph
-
-
-def get_shapley_feature_contribution(contribution_graph: None, feature_index: int):
-    """Calculate the feature contributions of a single feature.
-    
-    Args:
-        contribution_graph (dict): 
-            A dictionary mapping each possible subcoalitoin of feature changes to their model score
-            Subcoalitions are tuples containing feature indices, e.g. (1, 4, 9).
-        feature_index (int): The index of the feature for which the Shapley contribution should be calulcated.
-    """
-    # amount of features/players
-    n = max([len(node) for node in contribution_graph])
-    ordered_nodes = [
-        [node for node in contribution_graph if len(node) == i]
-        for i in range(n+1)
-        ]
-    contributions_feature_i = []
-    for i in range(len(ordered_nodes) - 1):
-        row1 = ordered_nodes[i]
-        row2 = [node for node in ordered_nodes[i + 1]
-                if feature_index in node]
-        size = len(row1[0])  # |S|, i.e. the size of the set S
-        for node_w_feature in row2:
-            remainder = [e for e in node_w_feature if e != feature_index]
-            backlink = [node for node in row1 if all([i in node for i in remainder])][0]
-            # contribution of adding feature i
-            marginal_contr = contribution_graph[node_w_feature] - contribution_graph[backlink]
-            marginal_contr_norm = marginal_contr * factorial(size) * factorial(n-size-1) / factorial(n)
-            contributions_feature_i.append(marginal_contr_norm)
-    # sum all contributions over all sets S
-    return np.sum(contributions_feature_i)
 
 def get_shapley_feature_contribution(contribution_graph: dict, feature_index: int):
     """
@@ -265,7 +200,7 @@ def calc_shapley_values_between(
     instance2, 
     model, 
     class_of_interest_index=0,
-    sample_size = None,
+    sample_kwargs = None,
     return_contribution_graph = False,
     ):
     """
@@ -284,7 +219,7 @@ def calc_shapley_values_between(
         model=model, 
         indices_feature_diff=indices_feature_diff,
         class_of_interest_index=class_of_interest_index,
-        sample_size=sample_size
+        sample_kwargs=sample_kwargs
     )
 
     feature_contributions = []

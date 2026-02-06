@@ -1,6 +1,6 @@
 from itertools import combinations
 from typing import Callable, List, Dict
-
+import logging
 import numpy as np
 
 from counterplots.utils.plots import make_greedy_plot, make_countershapley_plot, make_constellation_plot
@@ -8,6 +8,9 @@ from counterplots.utils.process import create_adapted_model_and_class, greedy_st
     _convert_legendvalue
 from counterplots.utils.verification import verify_factual_counterfactual_shape, verify_factual_cf,  \
     verify_feature_names, verify_model_prediction, verify_binary_class, verify_class_names
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
 
 
 class CreatePlot:
@@ -19,8 +22,22 @@ class CreatePlot:
             model_pred: Callable,
             feature_names: List[str] = None,
             class_names: Dict[int, str] = None,
-            sample_size=None
+            sample_kwargs=None
             ):
+        """
+
+        Args:
+            factual (np.ndarray): The factual instance
+            cf (np.ndarray): The counterfactual instance
+            model_pred (callable): A function that takes an instance and returns a model prediction score.
+            feature_names (List[str]): Array of feature names.
+            class_names (Dict[int, str]): Dictionary that maps class integers to their name. Used for plotting.
+            sample_kwargs (Dict | None): Dictionary containing configuration for subsampling Shapley values.
+                Must contain the keys "n" (sample size). 
+                May specify the key "ensure_outer_edges" to ensure the outer edges of the contribution graph is sampled. 
+                Outer edges compare contributions between: {} and {i}, S and S \ {i}.
+                Default is True for stable solutions.
+        """
 
         # If feature_names is not provided, create it
         if feature_names is None:
@@ -35,7 +52,7 @@ class CreatePlot:
         self.cf = np.array(cf)
         self.feature_names = feature_names
         self.class_names = class_names
-        self.sample_size=sample_size
+        self.sample_kwargs = sample_kwargs
         self.idx_feat_diff = np.where(self.factual != self.cf)[0]
         self.adapted_model, self.class_names = create_adapted_model_and_class(
             factual=factual,
@@ -47,7 +64,7 @@ class CreatePlot:
             instance1 = self.factual,
             instance2 = self.cf,
             model=self.adapted_model,
-            sample_size=self.sample_size,
+            sample_kwargs=self.sample_kwargs,
             return_contribution_graph=True
         )
         
@@ -61,7 +78,6 @@ class CreatePlot:
         verify_model_prediction(model_pred, factual)
         verify_binary_class(model_pred, factual)
         verify_class_names(class_names)
-
 
     def greedy(self, save_path: str = None):
         # Make a greedy search to find the best feature to change
