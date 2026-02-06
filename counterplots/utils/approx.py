@@ -141,7 +141,6 @@ def get_subcoalitions_sample(
     sample_size, 
     rng=None,
     ensure_outer_edges=True,
-    return_as_edges=False,
     ):
     if rng is None:
         rng = np.random.default_rng()
@@ -165,13 +164,6 @@ def get_subcoalitions_sample(
     else:
         # Ensure at least outer nodes are present
         nodes.extend(((), tuple(features)))
-
-    if return_as_edges == True:
-        # 3. Deduplicate edges - # O(sample_size) avg, O(sample_size**2) at worst
-        edges = list(dict.fromkeys(zip(start_nodes, end_nodes)))
-        start_nodes, end_nodes = zip(*edges)
-
-        return tuple(start_nodes), tuple(end_nodes)
 
     # deduplicate nodes
     nodes = tuple(dict.fromkeys(nodes))
