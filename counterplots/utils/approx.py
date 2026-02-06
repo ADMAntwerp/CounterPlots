@@ -142,12 +142,16 @@ def get_subcoalitions_sample(
     rng=None,
     ensure_outer_edges=True,
     ):
+    n_features = len(features)
+    max_n_edges = n_features * 2**(n_features-1)
     if rng is None:
         rng = np.random.default_rng()
     if isinstance(sample_size, float):
-        n_features = len(features)
-        max_n_edges = n_features * 2**(n_features-1)
+        
         sample_size  = int(sample_size * max_n_edges)
+        if sample_size < len(features):
+            logger.warning(f"The provided sample size {sample_size} is too small to evenly sample {n_features} features. Setting it to the minimum of {n_features} instead.")
+            sample_size = n_features
     logger.debug("Making {} Shapley comparisons (max={})".format(sample_size, max_n_edges))
 
     nodes = []
