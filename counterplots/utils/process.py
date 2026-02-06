@@ -75,7 +75,6 @@ def greedy_strategy(factual, cf, predict_fn, feature_names):
         features_data.append({
             'score': best_pred,
             'name': best_feat_name,
-
             'factual': factual_value,
             'counterfactual': counterfactual_value,
         })
@@ -86,16 +85,6 @@ def greedy_strategy(factual, cf, predict_fn, feature_names):
 
 def calc_adapted_instance(instance, instance2, _indices):
     return np.asarray([instance[i] if i not in _indices else instance2[i] for i in range(len(instance))])
-
-
-def _bitfield2d(n):
-    return np.array([
-        [
-            (i >> bit) & 1 
-            for bit in range(len(n))
-        ] 
-        for i in all_indices
-        ])
 
 
 def _get_subcoalitions(indices_feature_diff):
@@ -136,7 +125,7 @@ def calc_contribution_graph(
     indices_feature_diff,
     class_of_interest_index=0,
     sample_kwargs=None
-    ) -> {}:
+    ) -> dict:
     """
     Changes all possible combinations of features of instance1 and calculates the prediction value.
     The features to be changed are given by index by :arg indices_feature_diff: and are changed to the values as they

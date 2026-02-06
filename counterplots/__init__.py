@@ -20,11 +20,11 @@ class CreatePlot:
             factual: np.ndarray,
             cf: np.ndarray,
             model_pred: Callable,
-            feature_names: List[str] = None,
-            class_names: Dict[int, str] = None,
-            decision_threshold = 0.5
+            feature_names: List[str] | None = None,
+            class_names: Dict[int, str] | None = None,
+            decision_threshold = 0.5,
             sample_kwargs=None
-            ):
+            ) -> None:
         """
 
         Args:
@@ -36,7 +36,7 @@ class CreatePlot:
             sample_kwargs (Dict | None): Dictionary containing configuration for subsampling Shapley values.
                 Must contain the keys "n" (sample size). 
                 May specify the key "ensure_outer_edges" to ensure the outer edges of the contribution graph is sampled. 
-                Outer edges compare contributions between: {} and {i}, S and S \ {i}.
+                Outer edges compare contributions between: {} and {i}, S and S \\ {i}.
                 Default is True for stable solutions.
         """
 
@@ -80,7 +80,7 @@ class CreatePlot:
         verify_binary_class(model_pred, factual)
         verify_class_names(class_names)
 
-    def greedy(self, save_path: str = None):
+    def greedy(self, save_path: str | None = None):
         # Make a greedy search to find the best feature to change
         features_data = greedy_strategy(
             factual=self.factual,
@@ -99,7 +99,7 @@ class CreatePlot:
             )
         return fig, ax
 
-    def countershapley(self, save_path: str = None):
+    def countershapley(self, save_path: str | None = None):
 
         # Create data for countershapley plot
         sum_contributions = np.sum(self.feat_contributions)

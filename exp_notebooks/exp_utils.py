@@ -10,7 +10,7 @@ class CounterPlotNice(NICE):
         self.predict_fn = predict_fn
         self.decision_threshold = decision_threshold
 
-    def explain(self, X, feature_names=None, class_names=None, target_class='other', sample_kwargs=None):
+    def explain(self, X, target_class='other', feature_names=None, class_names=None,  sample_kwargs=None):
         explanations = super().explain(X, target_class)
 
         out_exp = []
@@ -23,7 +23,7 @@ class CounterPlotNice(NICE):
                     model_pred=self.predict_fn,
                     feature_names=feature_names,
                     class_names=class_names,
-                    decision_threshold=self.decision_threshold
+                    decision_threshold=self.decision_threshold,
                     sample_kwargs=sample_kwargs
                 )
             )
@@ -49,8 +49,8 @@ class counterplot_explainer:
             model_pred=self.model,
             feature_names=self.feature_names,
             class_names=self.class_names,
-            decision_threshold=self.decision_threshold
-            sample_size=self.sample_size
+            decision_threshold=self.decision_threshold,
+            sample_kwargs=self.sample_kwargs
         )
 
         results = exp
