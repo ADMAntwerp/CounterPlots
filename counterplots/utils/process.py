@@ -201,7 +201,6 @@ def calc_shapley_values_between(
     predict_fn, 
     class_of_interest_index=0,
     sample_kwargs = None,
-    return_contribution_graph = False,
     ):
     """
     Calculates shapley values between some instance and another instance, where the differences
@@ -230,9 +229,7 @@ def calc_shapley_values_between(
     feature_contributions, feature_idx_sorted = zip(
         *sorted(zip(feature_contributions, indices_feature_diff))[::-1]
         )
-    if return_contribution_graph: 
-        return feature_contributions, feature_idx_sorted, contribution_graph
-    return feature_contributions, feature_idx_sorted
+    return feature_contributions, feature_idx_sorted, contribution_graph
 
 
 def _format_e(x):

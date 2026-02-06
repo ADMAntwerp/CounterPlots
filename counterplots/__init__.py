@@ -67,7 +67,6 @@ class CreatePlot:
             instance2 = self.cf,
             predict_fn=self.predict_fn,
             sample_kwargs=self.sample_kwargs,
-            return_contribution_graph=True
         )
         
         self.factual_score = self.contribution_graph[()]
