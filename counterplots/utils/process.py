@@ -175,6 +175,18 @@ def calc_contribution_graph(
 def get_shapley_feature_contribution(contribution_graph: dict, feature_index: int):
     """
     Calculate the Shapley contribution of a single feature.
+    
+    When sampling is used to build the contribution_graph, some coalitions may be missing.
+    In such cases, the function skips comparisons where a coalition S or S∪{i} is not present,
+    which can introduce bias in the Shapley value estimation. A warning is logged when more
+    than 10% of potential comparisons are skipped due to missing coalitions.
+    
+    Args:
+        contribution_graph: Dictionary mapping coalitions (tuples of feature indices) to predictions
+        feature_index: Index of the feature to calculate Shapley contribution for
+        
+    Returns:
+        float: Shapley contribution value for the feature
     """
     # number of players
     n = max(len(S) for S in contribution_graph)
@@ -186,13 +198,27 @@ def get_shapley_feature_contribution(contribution_graph: dict, feature_index: in
     }
 
     contribution = 0.0
+    total_comparisons = 0
+    skipped_comparisons = 0
+    
     for S, v_S in contribution_graph.items():
         if feature_index in S: continue
         S_with_i = tuple(sorted((*S, feature_index)))
+        total_comparisons += 1
         v_S_i = contribution_graph.get(S_with_i)
-        if v_S_i is None: continue
+        if v_S_i is None:
+            skipped_comparisons += 1
+            continue
         k = len(S)
         contribution += (v_S_i - v_S) * weights[k]
+
+    # Warn if a significant proportion of comparisons were skipped
+    if total_comparisons > 0 and skipped_comparisons / total_comparisons > 0.1:
+        logger.warning(
+            f"Feature {feature_index}: Skipped {skipped_comparisons}/{total_comparisons} "
+            f"({100 * skipped_comparisons / total_comparisons:.1f}%) coalition comparisons due to sampling. "
+            "This may introduce bias in the Shapley value estimate."
+        )
 
     return contribution
 
