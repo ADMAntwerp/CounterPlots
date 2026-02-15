@@ -160,6 +160,8 @@ def calc_contribution_graph(
         subcoalitions = _get_subcoalitions(indices_feature_diff)
     else:
         # Sample subcoalitions
+        if "n" not in sample_kwargs:
+            raise ValueError("sample_kwargs must contain 'n' key specifying the sample size")
         sample_size = sample_kwargs['n']
         ensure_outer_edges = sample_kwargs.get("ensure_outer_edges", True)
         subcoalitions = get_subcoalitions_sample(indices_feature_diff, sample_size=sample_size, ensure_outer_edges=ensure_outer_edges)
