@@ -125,7 +125,7 @@ class TestScript(unittest.TestCase):
 
         class_of_interest_index = 0
 
-        feature_contributions, indices = calc_shapley_values_between(
+        feature_contributions, indices, contribution_graph = calc_shapley_values_between(
             instance1, instance2, model, class_of_interest_index)
 
         self.assertEqual(feature_contributions, (0.42166666666666663, 0.30166666666666664, 0.2766666666666666))

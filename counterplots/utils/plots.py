@@ -217,7 +217,7 @@ def make_countershapley_plot(factual_score, features_data, classes, save_path):
     # Draw bar for the factual score
     plt.bar(0, scale_y - 10, width=0.5, color=PINK1, linewidth=1)
     plt.text(-5, scale_y + fontsize * 4, 'Factual Score', color=PINK1, fontsize=fontsize)
-    plt.text(0, scale_y, factual_score, color=PINK1, fontsize=fontsize)
+    plt.text(0, scale_y, round(factual_score, 2), color=PINK1, fontsize=fontsize)
 
     # Plot bar for the counterfactual score
     plt.bar(current_x_pos, scale_y - 10, width=0.5, color=BLUE1, linewidth=1)

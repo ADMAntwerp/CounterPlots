@@ -20,10 +20,11 @@ class CreatePlot:
             factual: np.ndarray,
             cf: np.ndarray,
             model_pred: Callable,
-            feature_names: List[str] = None,
-            class_names: Dict[int, str] = None,
+            feature_names: List[str] | None = None,
+            class_names: Dict[int, str] | None = None,
+            decision_threshold = 0.5,
             sample_kwargs=None
-            ):
+            ) -> None:
         """
 
         Args:
@@ -35,8 +36,8 @@ class CreatePlot:
             sample_kwargs (Dict | None): Dictionary containing configuration for subsampling Shapley values.
                 Must contain the keys "n" (sample size). 
                 May specify the key "ensure_outer_edges" to ensure the outer edges of the contribution graph is sampled. 
-                Outer edges compare contributions between the empty set and single features ({i}), as well as between the
-                full feature set S and all (N-1)-feature subsets S \ {i}. Default is True for stable solutions.
+                Outer edges compare contributions between: {} and {i}, S and S \\ {i}.
+                Default is True for stable solutions.
         """
 
         # If feature_names is not provided, create it
@@ -52,18 +53,10 @@ class CreatePlot:
         self.cf = np.array(cf)
         self.feature_names = feature_names
         self.class_names = class_names
+        self.decision_threshold = decision_threshold
         self.sample_kwargs = sample_kwargs
-        
-        # Make verifications before expensive operations
-        verify_factual_counterfactual_shape(factual, cf)
-        verify_factual_cf(factual, cf)
-        verify_feature_names(factual, feature_names)
-        verify_model_prediction(model_pred, factual)
-        verify_binary_class(model_pred, factual)
-        verify_class_names(class_names)
-        
         self.idx_feat_diff = np.where(self.factual != self.cf)[0]
-        self.adapted_model, self.class_names = create_adapted_model_and_class(
+        self.predict_fn, self.class_names = create_adapted_model_and_class(
             factual=factual,
             model_pred=model_pred,
             class_names=class_names
@@ -72,20 +65,27 @@ class CreatePlot:
         self.feat_contributions, self.adapted_feat_idxs, self.contribution_graph = calc_shapley_values_between(
             instance1 = self.factual,
             instance2 = self.cf,
-            model=self.adapted_model,
+            predict_fn=self.predict_fn,
             sample_kwargs=self.sample_kwargs,
-            return_contribution_graph=True
         )
         
         self.factual_score = self.contribution_graph[()]
         self.cf_score = self.contribution_graph[tuple(self.idx_feat_diff)]
 
-    def greedy(self, save_path: str = None):
+        # Make verifications
+        verify_factual_counterfactual_shape(factual, cf)
+        verify_factual_cf(factual, cf)
+        verify_feature_names(factual, feature_names)
+        verify_model_prediction(model_pred, factual)
+        verify_binary_class(model_pred, factual)
+        verify_class_names(class_names)
+
+    def greedy(self, save_path: str | None = None):
         # Make a greedy search to find the best feature to change
         features_data = greedy_strategy(
             factual=self.factual,
             cf=self.cf,
-            adapted_model=self.adapted_model,
+            predict_fn=self.predict_fn,
             feature_names=self.feature_names
             )
 
@@ -99,7 +99,7 @@ class CreatePlot:
             )
         return fig, ax
 
-    def countershapley(self, save_path: str = None):
+    def countershapley(self, save_path: str | None = None):
 
         # Create data for countershapley plot
         sum_contributions = np.sum(self.feat_contributions)
@@ -126,10 +126,10 @@ class CreatePlot:
 
         # Plot the countershapley values
         fig, ax = make_countershapley_plot(
-            round(self.factual_score, 2), 
+            self.factual_score, 
             features_data, 
             self.class_names, 
-            save_path
+            save_path,
             )
 
         return fig, ax
@@ -268,7 +268,7 @@ class CreatePlot:
         )
 
         # Get points predictions
-        points_pred = self.adapted_model(points_mod)
+        points_pred = self.predict_fn(points_mod)
 
         # Get single points with single change and their predictions - These are plotted larger
         single_points = np.array([
@@ -314,7 +314,7 @@ class CreatePlot:
             cf_score=self.cf_score,
             point_to_pred=point_to_pred,
             decision_threshold=self.decision_threshold,
-            port=port,
+            port=8050,
             debug=debug
         )
 

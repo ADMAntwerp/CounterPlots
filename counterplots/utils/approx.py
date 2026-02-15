@@ -105,6 +105,7 @@ def sample_random_edges(features, sample_size, rng=None):
     Returns:
         start_nodes (np.ndarray): Integer-encoded start coalitions
         end_nodes (np.ndarray): Integer-encoded end coalitions
+        feature_indices (np.ndarray): Feature index for each edge
     """
     if rng is None: rng = np.random.default_rng()
     n_features = len(features)
@@ -124,7 +125,7 @@ def sample_random_edges(features, sample_size, rng=None):
             size=n_draw,
             replace=False
         )
-        # Convert to bit to construct edges
+        # Convert to bit to constuct edges
         base_bits = int_to_bits(base_ints, n_features - 1)
         end_bits = insert_bit(base_bits, feat_idx, 1)
         start_bits = end_bits.copy()
@@ -135,49 +136,37 @@ def sample_random_edges(features, sample_size, rng=None):
     return start_nodes, end_nodes
 
 
-def get_subcoalitions_sample(
+def _get_subcoalitions_sample(
     features, 
     sample_size, 
     rng=None,
     ensure_outer_edges=True,
-    return_as_edges=False,
     ):
+    n_features = len(features)
+    max_n_edges = n_features * 2**(n_features-1)
     if rng is None:
         rng = np.random.default_rng()
-    n_features = len(features)
-    max_n_edges = n_features * 2**(n_features - 1)
     if isinstance(sample_size, float):
-        sample_size = int(sample_size * max_n_edges)
+        sample_size  = int(sample_size * max_n_edges)
+        if sample_size < len(features):
+            logger.warning(f"The provided sample size {sample_size} is too small to evenly sample {n_features} features. Setting it to the minimum of {n_features} instead.")
+            sample_size = n_features
     logger.debug("Making {} Shapley comparisons (max={})".format(sample_size, max_n_edges))
 
     nodes = []
-    # Accumulate edges so we can optionally return them
-    edge_start_nodes = []
-    edge_end_nodes = []
 
     # random edges
     start, end = sample_random_edges(features, sample_size, rng)
     nodes.extend(start)
     nodes.extend(end)
-    edge_start_nodes.extend(start)
-    edge_end_nodes.extend(end)
 
     if ensure_outer_edges == True:
         start, end = get_outer_edges(features)
         nodes.extend(start)
         nodes.extend(end)
-        edge_start_nodes.extend(start)
-        edge_end_nodes.extend(end)
     else:
         # Ensure at least outer nodes are present
         nodes.extend(((), tuple(features)))
-
-    if return_as_edges == True:
-        # 3. Deduplicate edges - # O(sample_size) avg, O(sample_size**2) at worst
-        edges = list(dict.fromkeys(zip(edge_start_nodes, edge_end_nodes)))
-        start_nodes, end_nodes = zip(*edges)
-
-        return tuple(start_nodes), tuple(end_nodes)
 
     # deduplicate nodes
     nodes = tuple(dict.fromkeys(nodes))

@@ -1,46 +1,55 @@
 from itertools import combinations
 from functools import lru_cache
 import numpy as np
+from multiprocessing import Pool, cpu_count
 from math import factorial
-from .approx import get_subcoalitions_sample
+from .approx import _get_subcoalitions_sample
 import logging
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 
+MULTIPROCESS_MIN_SIZE = 6  # CFE dimension at which it starts making sense to parallellize
+
+class AdaptedModel:
+    def __init__(self, model_pred, col, invert):
+        self.model_pred = model_pred
+        self.col = col
+        self.invert = invert
+
+    def __call__(self, x):
+        p = np.array(self.model_pred(x))
+        if self.col is not None:
+            p = p[:, self.col]
+        return 1 - p if self.invert else p
 
 def create_adapted_model_and_class(factual, model_pred, class_names):
-    """ Adapts the model to return a single class, factual class is also always 0
+    pred = np.array(model_pred(np.array([factual])))
 
-    Args:
-        factual (np.ndarray): Factual instance
-        model_pred (object): Model prediction function
+    if pred.ndim == 2:
+        col = 1 if pred.shape[1] == 2 else 0
+        factual_prob = pred[0, col]
+    else:
+        col = None
+        factual_prob = pred[0]
 
-    Returns:
-        obejct: Adapted model prediction function
-    """
-    pred_test = np.array(model_pred(np.array([factual])))
-    if len(pred_test.shape) == 2:
-        # If model has two classes, return the probability of the second class (1)
-        if pred_test.shape[1] == 2:
-            def adapted_model(x): return np.array(model_pred(x))[:, 1] if pred_test[0][1] < 0.5 else np.array(
-                model_pred(x))[:, 0]
-            adapted_class = {0: class_names[0], 1: class_names[1]} if pred_test[0][1] < 0.5 else {0: class_names[1],
-                                                                                                  1: class_names[0]}
-        else:
-            def adapted_model(x): return np.array(model_pred(x))[:, 0] if pred_test[0][0] < 0.5 else 1 - np.array(
-                model_pred(x))[:, 0]
-            adapted_class = {0: class_names[0], 1: class_names[1]} if pred_test[0][0] < 0.5 else {0: class_names[1],
-                                                                                                  1: class_names[0]}
-        return adapted_model, adapted_class
+    invert = factual_prob >= 0.5
 
-    def adapted_model(x): return np.array(model_pred(
-        x)) if pred_test[0] < 0.5 else 1 - np.array(model_pred(x))
-    adapted_class = {0: class_names[0], 1: class_names[1]} if pred_test[0] < 0.5 else {0: class_names[1],
-                                                                                       1: class_names[0]}
+    adapted_model = AdaptedModel(
+        model_pred=model_pred,
+        col=col,
+        invert=invert,
+    )
+
+    adapted_class = (
+        {0: class_names[1], 1: class_names[0]}
+        if invert
+        else {0: class_names[0], 1: class_names[1]}
+    )
+
     return adapted_model, adapted_class
 
 
-def greedy_strategy(factual, cf, adapted_model, feature_names):
+def greedy_strategy(factual, cf, predict_fn, feature_names):
     modified_features = np.where(factual != cf)[0]
 
     features_data = []
@@ -59,7 +68,7 @@ def greedy_strategy(factual, cf, adapted_model, feature_names):
             modified_factual[check_feature] = cf[check_feature]
 
         # Make predictions
-        modified_factuals_pred = adapted_model(np.array(modified_factuals))
+        modified_factuals_pred = predict_fn(np.array(modified_factuals))
 
         best_feature = check_features[np.argmax(modified_factuals_pred)]
         best_pred = np.max(modified_factuals_pred)
@@ -76,7 +85,6 @@ def greedy_strategy(factual, cf, adapted_model, feature_names):
         features_data.append({
             'score': best_pred,
             'name': best_feat_name,
-
             'factual': factual_value,
             'counterfactual': counterfactual_value,
         })
@@ -89,18 +97,7 @@ def calc_adapted_instance(instance, instance2, _indices):
     return np.asarray([instance[i] if i not in _indices else instance2[i] for i in range(len(instance))])
 
 
-def _bitfield2d(n):
-    all_indices = range(2 ** len(n))
-    return np.array([
-        [
-            (i >> bit) & 1
-            for bit in range(len(n))
-        ]
-        for i in all_indices
-    ])
-
-
-def _get_subcoalitions(indices_feature_diff):
+def _get_all_subcoalitions(indices_feature_diff):
     # return all subcoalitions
     return [
         subset 
@@ -108,123 +105,163 @@ def _get_subcoalitions(indices_feature_diff):
         for subset in combinations(indices_feature_diff, L)
     ]
 
+
+def _generate_subcoalitions(indices_feature_diff, sample_kwargs):
+    if sample_kwargs is None:
+        return _get_all_subcoalitions(indices_feature_diff)
+
+    return _get_subcoalitions_sample(
+        indices_feature_diff,
+        sample_size=sample_kwargs["n"],
+        ensure_outer_edges=sample_kwargs.get("ensure_outer_edges", True),
+    )
+
+
 def _array_key(arr: np.ndarray):
     """Convert a numpy array to a reconstructable, but hashable object"""
     return (arr.dtype.str, arr.shape, arr.tobytes())
 
 
-def get_model_prediction(changed_instance, model, class_of_interest_index):
-    """Wrapper function to get the model prediction of an adapted instance with caching.
-    
-    This function converts numpy array inputs to hashable objects to enable LRU caching
-    of model predictions, which significantly improves performance when computing Shapley values.
-    
-    Note: The model object itself must be hashable for caching to work. If your model is not
-    hashable (e.g., most scikit-learn models, TensorFlow models, PyTorch models), you should
-    wrap it in a hashable callable or use a different caching strategy.
-    
-    Args:
-        changed_instance: numpy array representing the instance to predict
-        model: callable that takes a list of instances and returns predictions (must be hashable).
-              Expected to return an array-like object that can be indexed by class_of_interest_index.
-        class_of_interest_index: index of the class to extract from predictions
-        
-    Returns:
-        The prediction value for the specified class
-    """
+def get_model_prediction(changed_instance, predict_fn, class_of_interest_index):
+    """Wrapper function to get the model prediction of an adapted instance, where the input instances
+    are first converted to reconstructable, but hashable (and therefore cachable) objects"""
     return _get_model_prediction_cached(
         _array_key(changed_instance),
-        model,
+        predict_fn,
         class_of_interest_index
     )
 
 
 @lru_cache(maxsize=None)
-def _get_model_prediction_cached(changed_instance_key, model, class_of_interest_index):
-    """Internal cached function for model predictions.
-    
-    This function is decorated with @lru_cache to cache predictions based on the input
-    parameters. The cache uses the hash of all parameters, including the model object.
-    
-    IMPORTANT: This function requires the model parameter to be hashable. Most ML model
-    objects (scikit-learn, TensorFlow, PyTorch) are NOT hashable by default and will
-    raise a TypeError. For those cases, wrap the model in a hashable callable or
-    implement a custom caching strategy.
-    
-    Args:
-        changed_instance_key: tuple of (dtype, shape, bytes) representing the numpy array
-        model: callable prediction function (must be hashable for caching to work).
-               Expected to return an array-like object that can be indexed by class_of_interest_index.
-        class_of_interest_index: index of the class to extract from predictions
-        
-    Returns:
-        The prediction value for the specified class
-    """
-    changed_instance = np.frombuffer(changed_instance_key[2], dtype=changed_instance_key[0]).reshape(changed_instance_key[1])
-    return model([changed_instance])[class_of_interest_index]
+def _get_model_prediction_cached(changed_instance_key, predict_fn, class_of_interest_index):
+    """Reconstruct numpy arrays from their key and run model inference, or fetch it from cache"""
+    changed_instance = np.frombuffer(changed_instance_key[2], dtype=changed_instance_key[0]).reshape(changed_instance_key[1])  # dim = (n_feat,)
+    pred = predict_fn([changed_instance])[class_of_interest_index]
+    return pred
+
+
+def _evaluate_subcoalition(
+    subcoalition,
+    instance1,
+    instance2,
+    predict_fn,
+    class_of_interest_index
+    ):
+    changed_instance = calc_adapted_instance(instance1, instance2, subcoalition)
+    prediction = get_model_prediction(
+        changed_instance, predict_fn, class_of_interest_index
+    )
+    return subcoalition, prediction
+
+
+def _calc_contribution_graph_serial(
+    subcoalitions,
+    instance1,
+    instance2,
+    predict_fn,
+    class_of_interest_index,
+    ):
+    contribution_graph = {}
+
+    for subcoalition in subcoalitions:
+        changed_instance = calc_adapted_instance(
+            instance1, instance2, subcoalition
+        )
+        contribution_graph[subcoalition] = get_model_prediction(
+            changed_instance,
+            predict_fn,
+            class_of_interest_index,
+        )
+
+    return contribution_graph
+
+
+def _calc_contribution_graph_parallel(
+    subcoalitions,
+    instance1,
+    instance2,
+    predict_fn,
+    class_of_interest_index,
+    cpu_count_,
+    ):
+    with Pool(cpu_count_) as pool:
+        results = pool.starmap(
+            _evaluate_subcoalition,
+            [
+                (sc, instance1, instance2, predict_fn, class_of_interest_index)
+                for sc in subcoalitions
+            ],
+        )
+
+    return dict(results)
 
 
 def calc_contribution_graph(
-    instance1: [], 
-    instance2: [], 
-    model, 
-    indices_feature_diff,
+    instance1,
+    instance2,
+    predict_fn,
     class_of_interest_index=0,
-    sample_kwargs=None
-    ) -> {}:
-    """
-    Changes all possible combinations of features of instance1 and calculates the prediction value.
-    The features to be changed are given by index by :arg indices_feature_diff: and are changed to the values as they
-    appear on these positions in :arg instance2:
+    sample_kwargs=None,
+    multiproc_kwargs=None
+    ):
+    """Calculate the contribution graph
 
-    :param instance1: The instance to be changed on certain features
-    :param instance2: The instance whose values the features will be changed to
-    :param model: The model, scoring the instance (must contain a predict_proba() method)
-    :param indices_feature_diff: The indices of the features whose value in :arg instance1: need to be changed to the
-    values as they appear in :arg instance2: at the same index
-    :param class_of_interest_index: predict_proba() predicts an outcome for each class. Pass the index of the class of
-    relevance here
+    A contribution graph is a dictionary that maps each subcoalition of 
+    feature changes to their corresponding score.
+    The possible feature changes are constructed based on the differences between
+    :param:`instance1` and :param:`instance2`.
 
-    :return: Dict: dictionary whose keys are the subset of features (some combination out of :arg indices_feature_diff:)
-    and whose values are the prediction value of :arg instance1:, but with adapted features on the indices of said
-    subset
+    This is generated once, and subcoalition comparisons for the calculation
+    of Shapley values is fetched from this dictionary.
+    If you pass :param:`sample_kwargs`, the contribution graph is sampled,
+    rather than calculated exactly.
+
+    Args:
+        instance1 (np.ndarray): The baseline instance. Usually the factual instance.
+        instance2 (np.ndarray): The counterfactual instance.
+        predict_fn (Callable): A function that takes an instance an produces a prediction score.
+        
     """
-    contribution_graph = {}
-    if sample_kwargs is None:
-        # Generate all subcoalitions
-        subcoalitions = _get_subcoalitions(indices_feature_diff)
+    indices_feature_diff = np.where(instance1 != instance2)[-1]
+    cf_size = len(indices_feature_diff)
+
+    # --- multiprocessing defaults ---
+    if multiproc_kwargs is None:
+        multiproc_kwargs = {
+            "min_size": MULTIPROCESS_MIN_SIZE,
+            "cpu_count": cpu_count(),
+        }
+
+    subcoalitions = _generate_subcoalitions(
+        indices_feature_diff,
+        sample_kwargs,
+    )
+
+    if cf_size < multiproc_kwargs['min_size']:
+        return _calc_contribution_graph_serial(
+            subcoalitions=subcoalitions,
+            instance1=instance1,
+            instance2=instance2,
+            predict_fn=predict_fn,
+            class_of_interest_index=class_of_interest_index
+        )
     else:
-        # Sample subcoalitions
-        if "n" not in sample_kwargs:
-            raise ValueError("sample_kwargs must contain 'n' key specifying the sample size")
-        sample_size = sample_kwargs['n']
-        ensure_outer_edges = sample_kwargs.get("ensure_outer_edges", True)
-        subcoalitions = get_subcoalitions_sample(indices_feature_diff, sample_size=sample_size, ensure_outer_edges=ensure_outer_edges)
-        logger.debug("Sampled {} unique coalitions".format(len(subcoalitions)))
-    for subcoalition in subcoalitions:
-        changed_instance = calc_adapted_instance(instance1, instance2, subcoalition)
-        prediction = get_model_prediction(changed_instance, model, class_of_interest_index)
-        contribution_graph[subcoalition] = prediction
+        return _calc_contribution_graph_parallel(
+            subcoalitions=subcoalitions,
+            instance1=instance1,
+            instance2=instance2,
+            predict_fn=predict_fn,
+            class_of_interest_index=class_of_interest_index,
+            cpu_count_=multiproc_kwargs['cpu_count']
+        )
     return contribution_graph
 
 def get_shapley_feature_contribution(contribution_graph: dict, feature_index: int):
     """
     Calculate the Shapley contribution of a single feature.
-    
-    When sampling is used to build the contribution_graph, some coalitions may be missing.
-    In such cases, the function skips comparisons where a coalition S or S∪{i} is not present,
-    which can introduce bias in the Shapley value estimation. A warning is logged when more
-    than 10% of potential comparisons are skipped due to missing coalitions.
-    
-    Args:
-        contribution_graph: Dictionary mapping coalitions (tuples of feature indices) to predictions
-        feature_index: Index of the feature to calculate Shapley contribution for
-        
-    Returns:
-        float: Shapley contribution value for the feature
     """
-    # number of players (maximum coalition size in the graph)
-    n = max((len(S) for S in contribution_graph), default=0)
+    # number of players
+    n = max(len(S) for S in contribution_graph)
 
     # precompute Shapley weights by coalition size
     weights = {
@@ -233,28 +270,13 @@ def get_shapley_feature_contribution(contribution_graph: dict, feature_index: in
     }
 
     contribution = 0.0
-    # Track comparisons to detect incomplete sampling
-    attempted_comparisons = 0
-    skipped_comparisons = 0
-    
     for S, v_S in contribution_graph.items():
         if feature_index in S: continue
         S_with_i = tuple(sorted((*S, feature_index)))
-        attempted_comparisons += 1
         v_S_i = contribution_graph.get(S_with_i)
-        if v_S_i is None:
-            skipped_comparisons += 1
-            continue
+        if v_S_i is None: continue
         k = len(S)
         contribution += (v_S_i - v_S) * weights[k]
-
-    # Warn if a significant proportion of comparisons were skipped
-    if attempted_comparisons > 0 and skipped_comparisons / attempted_comparisons > 0.1:
-        logger.warning(
-            f"Feature {feature_index}: Skipped {skipped_comparisons}/{attempted_comparisons} "
-            f"({100 * skipped_comparisons / attempted_comparisons:.1f}%) coalition comparisons due to sampling. "
-            "This may introduce bias in the Shapley value estimate."
-        )
 
     return contribution
 
@@ -262,16 +284,16 @@ def get_shapley_feature_contribution(contribution_graph: dict, feature_index: in
 def calc_shapley_values_between(
     instance1, 
     instance2, 
-    model, 
+    predict_fn, 
     class_of_interest_index=0,
     sample_kwargs = None,
-    return_contribution_graph = False,
+    multiproc_kwargs=None
     ):
     """
     Calculates shapley values between some instance and another instance, where the differences
     :param instance1: 1-dimensional array: The first instance (factual)
     :param instance2: 1-dimensional array: The second instance (counterfactual)
-    :param model: the modal generating predictions. Must have a predict_proba() method
+    :param predict_fn: the modal generating predictions. Must have a predict_proba() method
     :param class_of_interest_index: The index of the target class of interest. Generally equals 0
     :return: feature_contributions, indices
     """
@@ -280,10 +302,10 @@ def calc_shapley_values_between(
     contribution_graph = calc_contribution_graph(
         instance1=instance1, 
         instance2=instance2, 
-        model=model, 
-        indices_feature_diff=indices_feature_diff,
+        predict_fn=predict_fn, 
         class_of_interest_index=class_of_interest_index,
-        sample_kwargs=sample_kwargs
+        sample_kwargs=sample_kwargs,
+        multiproc_kwargs=multiproc_kwargs
     )
 
     feature_contributions = []
@@ -294,9 +316,7 @@ def calc_shapley_values_between(
     feature_contributions, feature_idx_sorted = zip(
         *sorted(zip(feature_contributions, indices_feature_diff))[::-1]
         )
-    if return_contribution_graph: 
-        return feature_contributions, feature_idx_sorted, contribution_graph
-    return feature_contributions, feature_idx_sorted
+    return feature_contributions, feature_idx_sorted, contribution_graph
 
 
 def _format_e(x):
