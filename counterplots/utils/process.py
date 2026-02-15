@@ -177,6 +177,8 @@ def get_shapley_feature_contribution(contribution_graph: dict, feature_index: in
     """
     Calculate the Shapley contribution of a single feature.
     """
+    if not contribution_graph:
+        raise ValueError("contribution_graph cannot be empty")
     # number of players
     n = max(len(S) for S in contribution_graph)
 
