@@ -3,18 +3,11 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 import matplotlib.patches as patches
-
-PINK1 = "#ff0055"
-PINK1_TR = "#ff0055D2"
-RED1 = "#c20000"
-BLUE1 = "#008ae7"
-BLUE_TR = "#008ae7D2"
-DARK_GREY = "#545454" 
-LIGHT_GREY = "#e0e0e0" 
+from .constellation_plot_dash import ConstellationPlotDash
+from ._COLORS import RED1, PINK1, PINK1_TR, BLUE1, BLUE_TR, LIGHT_GREY, DARK_GREY
 
 
 def _get_text_width_in_data_co(text, fig, ax):
-    renderer = fig.canvas.get_renderer()
     fig.canvas.draw()
 
     bbox = text.get_extents()
@@ -24,12 +17,11 @@ def _get_text_width_in_data_co(text, fig, ax):
     width = x1 - x0
     return width
 
-
 def _infer_text_orientation(text, fig, ax, w_limit):
     if _get_text_width_in_data_co(text, fig, ax) > w_limit: return "vertical" 
     return "horizontal"
 
-def make_greedy_plot(factual_score, features_data, class_names, save_path):
+def make_greedy_plot(factual_score, features_data, class_names, save_path, decision_threshold=0.5):
     fig = plt.figure(figsize=(7, 1 * len(features_data))) # noqa
 
     scatter_points = [f['score'] for f in features_data]
@@ -46,7 +38,7 @@ def make_greedy_plot(factual_score, features_data, class_names, save_path):
         plt.scatter(
             [point],
             [c_idx],
-            color=PINK1_TR if point < 0.5 else BLUE_TR,
+            color=PINK1_TR if point < decision_threshold else BLUE_TR,
             s=100)
 
     features_names = ['Factual']
@@ -56,7 +48,7 @@ def make_greedy_plot(factual_score, features_data, class_names, save_path):
     max_feat_names_length = max([len(feat_name) for feat_name in features_names])
 
     # Plot a vertical line at the threshold score
-    plt.axvline(x=0.5, color=RED1, zorder=0, linewidth=0.5)
+    plt.axvline(x=decision_threshold, color=RED1, zorder=0, linewidth=0.5)
 
     # Plot a vertical line at the factual score
     plt.axvline(x=factual_score, color=PINK1_TR,
@@ -263,14 +255,15 @@ def make_constellation_plot(
     factual_score, 
     single_points_chart, 
     text_features, 
-    mulitple_points_chart,
-    mulitple_points_chart_y, 
+    multiple_points_chart,
+    multiple_points_chart_y, 
     single_points, 
     class_names, 
     cf_score, 
     point_to_pred, 
     save_path,
-    highlight_changed_feature=None
+    highlight_changed_feature=None,
+    decision_threshold=0.5
     ):
     """
     Create a constellation plot visualizing feature change contributions.
@@ -287,14 +280,14 @@ def make_constellation_plot(
             Format: "feature_name (factual_value➜counterfactual_value)"
             Example: ["age (25➜30)", "income (50000➜60000)"]
         
-        mulitple_points_chart (np.ndarray): Array of shape (M,) with dtype=object, where each 
+        multiple_points_chart (np.ndarray): Array of shape (M,) with dtype=object, where each 
             element is [array([feature_change_indices]), score]. Maps feature CHANGE index 
             coalitions to their prediction scores, excluding the case where ALL features are changed.
             Example: array([[array([0, 1]), 0.334], [array([0, 2]), 0.370], [array([1, 2]), 0.429]], 
             dtype=object)
             Used to plot the smaller dots representing multiple simultaneous feature changes.
         
-        mulitple_points_chart_y (list): List of y-axis positions for the multiple change points.
+        multiple_points_chart_y (list): List of y-axis positions for the multiple change points.
             Each value is the mean of the feature change indices in the coalition.
             Example: [0.5, 1.0, 1.5]
         
@@ -338,7 +331,7 @@ def make_constellation_plot(
     # Plot single change points
     for idx_p, p in enumerate(single_points_chart):
         adapted_feat_ind, score = p
-        color = BLUE_TR if score >= 0.5 else PINK1_TR
+        color = BLUE_TR if score >= decision_threshold else PINK1_TR
         if highlight_changed_feature is not None and highlight_changed_feature != adapted_feat_ind: color=LIGHT_GREY
         plt.scatter(
             [score], 
@@ -359,23 +352,23 @@ def make_constellation_plot(
             )
 
     # Verify if there are multiple change points
-    if len(mulitple_points_chart) > 0:
-        adapted_feat_inds_per_point = mulitple_points_chart[:, 0]  # average height ~ average adapted feat inds.
-        scores = mulitple_points_chart[:, 1]
+    if len(multiple_points_chart) > 0:
+        adapted_feat_inds_per_point = multiple_points_chart[:, 0]  # average height ~ average adapted feat inds.
+        scores = multiple_points_chart[:, 1]
         if highlight_changed_feature is None:
             # No specific feature highlighted: keep original sign-based coloring
-            colors = ['#E0423A' if s < 0.5 else 'blue' for s in scores]
+            colors = ['#E0423A' if s < decision_threshold else 'blue' for s in scores]
         else:
             # When highlighting a feature, de-emphasize all coalitions that do not contain it
             colors = [
-                '#E0423A' if s < 0.5 and highlight_changed_feature in f_ind
-                else 'blue' if s >= 0.5 and highlight_changed_feature in f_ind
+                '#E0423A' if s < decision_threshold and highlight_changed_feature in f_ind
+                else 'blue' if s >= decision_threshold and highlight_changed_feature in f_ind
                 else LIGHT_GREY
                 for s, f_ind in zip(scores, adapted_feat_inds_per_point)
             ]
         plt.scatter(
             scores,
-            mulitple_points_chart_y,
+            multiple_points_chart_y,
             color=colors,
             s=10
         )
@@ -385,11 +378,11 @@ def make_constellation_plot(
     plt.scatter(
         [cf_score], 
         [cf_pred_x_1], 
-        color=BLUE_TR if cf_score >= 0.5 else PINK1_TR, 
+        color=BLUE_TR if cf_score >= decision_threshold else PINK1_TR, 
         s=100)
 
     # Plot a vertical line at the threshold
-    plt.axvline(x=0.5, color=RED1, zorder=0, linewidth=0.5)
+    plt.axvline(x=decision_threshold, color=RED1, zorder=0, linewidth=0.5)
 
     # Plot a vertical line at the factual score
     plt.axvline(x=factual_score, color=PINK1_TR,
@@ -436,7 +429,7 @@ def make_constellation_plot(
             alpha=0.15, 
             linestyle='dotted')
 
-    for points, x_value in mulitple_points_chart:
+    for points, x_value in multiple_points_chart:
         for origin_point in points:
             if highlight_changed_feature is not None and origin_point != highlight_changed_feature: continue
             x_0 = point_to_pred[origin_point]
@@ -457,3 +450,40 @@ def make_constellation_plot(
         plt.savefig(save_path, bbox_inches='tight')
 
     return fig, ax
+
+
+def make_constellation_plot_dash(
+    factual_score, 
+    single_points_chart, 
+    text_features, 
+    multiple_points_chart,
+    multiple_points_chart_y, 
+    single_points, 
+    class_names, 
+    cf_score, 
+    point_to_pred,
+    decision_threshold=0.5,
+    port=8050,
+    debug=False,
+):
+    """
+    Create and run an interactive constellation plot using Dash.
+    
+    Click on coalition points to highlight only the connected features and edges.
+    Click the Reset button or click the same coalition again to return to normal view.
+    """
+    plot = ConstellationPlotDash(
+        factual_score=factual_score,
+        single_points_chart=single_points_chart,
+        text_features=text_features,
+        multiple_points_chart=multiple_points_chart,
+        multiple_points_chart_y=multiple_points_chart_y,
+        single_points=single_points,
+        class_names=class_names,
+        cf_score=cf_score,
+        point_to_pred=point_to_pred,
+        decision_threshold=decision_threshold,
+    )
+    
+    plot.run(port=port, debug=debug)
+    return plot
