@@ -53,6 +53,15 @@ class CreatePlot:
         self.feature_names = feature_names
         self.class_names = class_names
         self.sample_kwargs = sample_kwargs
+        
+        # Make verifications before expensive operations
+        verify_factual_counterfactual_shape(factual, cf)
+        verify_factual_cf(factual, cf)
+        verify_feature_names(factual, feature_names)
+        verify_model_prediction(model_pred, factual)
+        verify_binary_class(model_pred, factual)
+        verify_class_names(class_names)
+        
         self.idx_feat_diff = np.where(self.factual != self.cf)[0]
         self.adapted_model, self.class_names = create_adapted_model_and_class(
             factual=factual,
@@ -70,14 +79,6 @@ class CreatePlot:
         
         self.factual_score = self.contribution_graph[()]
         self.cf_score = self.contribution_graph[tuple(self.idx_feat_diff)]
-
-        # Make verifications
-        verify_factual_counterfactual_shape(factual, cf)
-        verify_factual_cf(factual, cf)
-        verify_feature_names(factual, feature_names)
-        verify_model_prediction(model_pred, factual)
-        verify_binary_class(model_pred, factual)
-        verify_class_names(class_names)
 
     def greedy(self, save_path: str = None):
         # Make a greedy search to find the best feature to change
