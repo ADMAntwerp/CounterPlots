@@ -35,8 +35,8 @@ class CreatePlot:
             sample_kwargs (Dict | None): Dictionary containing configuration for subsampling Shapley values.
                 Must contain the keys "n" (sample size). 
                 May specify the key "ensure_outer_edges" to ensure the outer edges of the contribution graph is sampled. 
-                Outer edges compare contributions between: {} and {i}, S and S \ {i}.
-                Default is True for stable solutions.
+                Outer edges compare contributions between the empty set and single features ({i}), as well as between the
+                full feature set S and all (N-1)-feature subsets S \ {i}. Default is True for stable solutions.
         """
 
         # If feature_names is not provided, create it

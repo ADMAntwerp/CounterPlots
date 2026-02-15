@@ -46,7 +46,7 @@ class counterplot_explainer:
             model_pred=self.model,
             feature_names=self.feature_names,
             class_names=self.class_names,
-            sample_size=self.sample_size
+            sample_kwargs=self.sample_kwargs
         )
 
         results = exp
