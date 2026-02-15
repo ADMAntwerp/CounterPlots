@@ -114,8 +114,23 @@ def _array_key(arr: np.ndarray):
 
 
 def get_model_prediction(changed_instance, model, class_of_interest_index):
-    """Wrapper function to get the model prediction of an adapted instance, where the input instances
-    are first converted to reconstructable, but hashable (and therefore cachable) objects"""
+    """Wrapper function to get the model prediction of an adapted instance with caching.
+    
+    This function converts numpy array inputs to hashable objects to enable LRU caching
+    of model predictions, which significantly improves performance when computing Shapley values.
+    
+    Note: The model object itself must be hashable for caching to work. If your model is not
+    hashable (e.g., most scikit-learn models, TensorFlow models, PyTorch models), you should
+    wrap it in a hashable callable or use a different caching strategy.
+    
+    Args:
+        changed_instance: numpy array representing the instance to predict
+        model: callable that takes a list of instances and returns predictions (must be hashable)
+        class_of_interest_index: index of the class to extract from predictions
+        
+    Returns:
+        The prediction value for the specified class
+    """
     return _get_model_prediction_cached(
         _array_key(changed_instance),
         model,
@@ -125,7 +140,24 @@ def get_model_prediction(changed_instance, model, class_of_interest_index):
 
 @lru_cache(maxsize=None)
 def _get_model_prediction_cached(changed_instance_key, model, class_of_interest_index):
-    """Reconstruct numpy arrays from their key and run model inference, or fetch it from cache"""
+    """Internal cached function for model predictions.
+    
+    This function is decorated with @lru_cache to cache predictions based on the input
+    parameters. The cache uses the hash of all parameters, including the model object.
+    
+    IMPORTANT: This function requires the model parameter to be hashable. Most ML model
+    objects (scikit-learn, TensorFlow, PyTorch) are NOT hashable by default and will
+    raise a TypeError. For those cases, wrap the model in a hashable callable or
+    implement a custom caching strategy.
+    
+    Args:
+        changed_instance_key: tuple of (dtype, shape, bytes) representing the numpy array
+        model: callable prediction function (must be hashable for caching to work)
+        class_of_interest_index: index of the class to extract from predictions
+        
+    Returns:
+        The prediction value for the specified class
+    """
     changed_instance = np.frombuffer(changed_instance_key[2], dtype=changed_instance_key[0]).reshape(changed_instance_key[1])
     return model([changed_instance])[class_of_interest_index]
 
