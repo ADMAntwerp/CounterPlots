@@ -105,7 +105,6 @@ def sample_random_edges(features, sample_size, rng=None):
     Returns:
         start_nodes (np.ndarray): Integer-encoded start coalitions
         end_nodes (np.ndarray): Integer-encoded end coalitions
-        feature_indices (np.ndarray): Feature index for each edge
     """
     if rng is None: rng = np.random.default_rng()
     n_features = len(features)
