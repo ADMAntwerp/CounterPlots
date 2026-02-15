@@ -125,7 +125,8 @@ def get_model_prediction(changed_instance, model, class_of_interest_index):
     
     Args:
         changed_instance: numpy array representing the instance to predict
-        model: callable that takes a list of instances and returns predictions (must be hashable)
+        model: callable that takes a list of instances and returns predictions (must be hashable).
+              Expected to return an array-like object that can be indexed by class_of_interest_index.
         class_of_interest_index: index of the class to extract from predictions
         
     Returns:
@@ -152,7 +153,8 @@ def _get_model_prediction_cached(changed_instance_key, model, class_of_interest_
     
     Args:
         changed_instance_key: tuple of (dtype, shape, bytes) representing the numpy array
-        model: callable prediction function (must be hashable for caching to work)
+        model: callable prediction function (must be hashable for caching to work).
+               Expected to return an array-like object that can be indexed by class_of_interest_index.
         class_of_interest_index: index of the class to extract from predictions
         
     Returns:
