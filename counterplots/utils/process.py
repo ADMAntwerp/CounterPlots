@@ -90,13 +90,14 @@ def calc_adapted_instance(instance, instance2, _indices):
 
 
 def _bitfield2d(n):
+    all_indices = range(2 ** len(n))
     return np.array([
         [
-            (i >> bit) & 1 
+            (i >> bit) & 1
             for bit in range(len(n))
-        ] 
+        ]
         for i in all_indices
-        ])
+    ])
 
 
 def _get_subcoalitions(indices_feature_diff):
