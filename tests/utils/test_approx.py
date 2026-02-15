@@ -268,7 +268,9 @@ class TestGetSubcoalitionsSample(unittest.TestCase):
     def test_get_subcoalitions_sample_fractional_size(self):
         """Test that fractional sample size is converted to integer."""
         features = ['A', 'B', 'C']
-        sample_size = 0.5  # 50% of max edges
+        # Max edges is n_features * 2^(n_features - 1) = 3 * 4 = 12
+        # 0.5 represents 50% of max edges, which will be converted to int(0.5 * 12) = 6
+        sample_size = 0.5
         rng = np.random.default_rng(42)
         
         result = get_subcoalitions_sample(features, sample_size, rng)
