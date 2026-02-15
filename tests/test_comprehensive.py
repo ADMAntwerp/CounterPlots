@@ -13,7 +13,7 @@ import unittest
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')  # Non-interactive backend for CI
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # noqa: E402 — must be after backend set
 
 from counterplots import CreatePlot
 from counterplots.utils.verification import (
@@ -960,16 +960,15 @@ class TestEdgeCaseIdenticalInstances(unittest.TestCase):
     def test_no_differences(self):
         # When factual == cf, there are no feature differences.
         # calc_shapley_values_between will have 0 features to process
-        # and zip(*sorted(...)) will fail on empty input.
-        # This test documents this known limitation.
+        # and zip(*sorted(zip([], []))) raises ValueError on empty sequences.
+        # This is a known edge case that is not handled gracefully.
         factual = np.array([1, 2, 3])
         cf = np.array([1, 2, 3])
         model = _binary_model
 
         # Creating a plot with identical instances should fail because
-        # zip(*sorted(zip([], []))) raises ValueError on empty sequences.
-        # This is a known edge case that is not handled gracefully.
-        with self.assertRaises(ValueError):
+        # zip(*sorted(zip([], []))) raises ValueError: not enough values to unpack.
+        with self.assertRaisesRegex(ValueError, "not enough values to unpack"):
             CreatePlot(factual, cf, model, ['f1', 'f2', 'f3'], {0: '0', 1: '1'})
 
 
@@ -1153,6 +1152,31 @@ class TestEdgeCaseHighlightInvalidFeature(unittest.TestCase):
         )
         with self.assertRaises(AssertionError):
             cp.constellation(save_path=None, highlight_changed_feature="bad")
+
+    def test_float_highlight_raises(self):
+        """Float highlight should raise AssertionError."""
+        cp = CreatePlot(
+            np.array([1, 2, 3]),
+            np.array([4, 5, 6]),
+            _binary_model,
+            ['f1', 'f2', 'f3'],
+            {0: '0', 1: '1'},
+        )
+        with self.assertRaises(AssertionError):
+            cp.constellation(save_path=None, highlight_changed_feature=1.5)
+
+    def test_none_highlight_works(self):
+        """None highlight (default) should not raise."""
+        cp = CreatePlot(
+            np.array([1, 2, 3]),
+            np.array([4, 5, 6]),
+            _binary_model,
+            ['f1', 'f2', 'f3'],
+            {0: '0', 1: '1'},
+        )
+        fig, ax = cp.constellation(save_path=None, highlight_changed_feature=None)
+        self.assertIsNotNone(fig)
+        plt.close(fig)
 
 
 if __name__ == '__main__':
