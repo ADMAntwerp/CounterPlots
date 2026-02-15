@@ -1,0 +1,7 @@
+PINK1 = "#ff0055"
+PINK1_TR = "#ff0055d2"
+RED1 = "#c20000"
+BLUE1 = "#008ae7"
+BLUE_TR = "#008ae7d2"
+DARK_GREY = "#545454" 
+LIGHT_GREY = "#e0e0e0" 

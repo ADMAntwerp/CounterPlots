@@ -3,7 +3,7 @@ from typing import Callable, List, Dict
 import logging
 import numpy as np
 
-from counterplots.utils.plots import make_greedy_plot, make_countershapley_plot, make_constellation_plot
+from counterplots.utils.plots import make_greedy_plot, make_countershapley_plot, make_constellation_plot, make_constellation_plot_dash
 from counterplots.utils.process import create_adapted_model_and_class, greedy_strategy, calc_shapley_values_between, \
     _convert_legendvalue
 from counterplots.utils.verification import verify_factual_counterfactual_shape, verify_factual_cf,  \
@@ -86,14 +86,17 @@ class CreatePlot:
             factual=self.factual,
             cf=self.cf,
             adapted_model=self.adapted_model,
-            feature_names=self.feature_names)
+            feature_names=self.feature_names
+            )
 
         # Plot the greedy search
         fig, ax = make_greedy_plot(
             factual_score=self.factual_score,
             features_data=features_data,
             class_names=self.class_names,
-            save_path=save_path)
+            save_path=save_path,
+            decision_threshold=self.decision_threshold
+            )
         return fig, ax
 
     def countershapley(self, save_path: str = None):
@@ -196,28 +199,125 @@ class CreatePlot:
             [points_to_chart[point_feat], point_pred] 
             for point_feat, point_pred in single_points
             ])
-        mulitple_points_chart = np.array([
+        multiple_points_chart = np.array([
             [
                 np.array([points_to_chart[pf] for pf in point_feat]), 
                 point_pred
             ] for point_feat, point_pred in multiple_points
         ], dtype=object)
 
-        # Multiple points y axis (0 index of mulitple_points_chart) must be the mean of the point values
-        mulitple_points_chart_y = [np.mean(fp) for fp, _ in mulitple_points_chart]
+        # Multiple points y axis (0 index of multiple_points_chart) must be the mean of the point values
+        multiple_points_chart_y = [np.mean(fp) for fp, _ in multiple_points_chart]
 
         fig, ax = make_constellation_plot(
             factual_score=self.factual_score,
             single_points_chart=single_points_chart,
             text_features=text_features,
-            mulitple_points_chart=mulitple_points_chart,
-            mulitple_points_chart_y=mulitple_points_chart_y,
+            multiple_points_chart=multiple_points_chart,
+            multiple_points_chart_y=multiple_points_chart_y,
             single_points=single_points,
             class_names=self.class_names,
             cf_score=self.cf_score,
             point_to_pred=point_to_pred,
             save_path=save_path,
-            highlight_changed_feature=highlight_changed_feature
+            highlight_changed_feature=highlight_changed_feature,
+            decision_threshold=self.decision_threshold
         )
 
         return fig, ax
+
+    def constellation_interactive(self, save_path: str = None, port=8050, debug=False):
+        # Get the index of the features that are different between the factual and counterfactual
+        idx_feat_diff = np.where(self.factual != self.cf)[0]
+
+        # Constellation need at least 2 features to be different
+        if len(idx_feat_diff) < 2:
+            print(
+                'Showing greedy plot since constellation needs at least 2 features to be different')
+            self.greedy(save_path)
+            return
+
+        text_features = []
+        for i in idx_feat_diff:
+
+            # Adjust text of modification values
+            factual_raw_value = self.factual[i]
+            cf_value = self.cf[i]
+
+            factual_value = _convert_legendvalue(factual_raw_value)
+            counterfactual_value = _convert_legendvalue(cf_value)
+
+            factual_feat_text = str(factual_value)
+            cf_feat_text = str(counterfactual_value)
+            text_features.append(
+                f'{self.feature_names[i]} ({factual_feat_text}➜{cf_feat_text})')
+
+        # Create all possible combinations from 1 to the number of features that are different - 1
+        idx_feat_comb = [list(combinations(idx_feat_diff, i)) for i in range(1, len(idx_feat_diff))]
+        idx_feat_comb = [item for sublist in idx_feat_comb for item in sublist]
+
+        # Dataset with modified points
+        points_mod = np.array([self.factual] * len(idx_feat_comb))
+
+        # Make the changes to the points
+        points_mod = np.array([
+            np.array([
+                points_mod[i][j] if j not in idx_feat_comb[i] else self.cf[j]
+                for j in range(len(self.factual))]) for i in range(len(idx_feat_comb)
+            )]
+        )
+
+        # Get points predictions
+        points_pred = self.adapted_model(points_mod)
+
+        # Get single points with single change and their predictions - These are plotted larger
+        single_points = np.array([
+            [comb[0], points_pred[idx]] 
+            for idx, comb in enumerate(idx_feat_comb) 
+            if len(comb) == 1
+        ])
+
+        # Get multiple points with multiple changes and their predictions - these are plotted smaller
+        multiple_points = np.array([
+            [comb, points_pred[idx]] 
+            for idx, comb in enumerate(idx_feat_comb) 
+            if len(comb) > 1
+        ], dtype=object)
+
+        # Points to chart points
+        points_to_chart = {p: i for i, p in enumerate(single_points[:, 0])}
+        point_to_pred = {i: p for i, p in enumerate(single_points[:, 1])}
+
+        # Convert point features to chart points
+        single_points_chart = np.array([
+            [points_to_chart[point_feat], point_pred] 
+            for point_feat, point_pred in single_points
+            ])
+        multiple_points_chart = np.array([
+            [
+                np.array([points_to_chart[pf] for pf in point_feat]), 
+                point_pred
+            ] for point_feat, point_pred in multiple_points
+        ], dtype=object)
+
+        # Multiple points y axis (0 index of multiple_points_chart) must be the mean of the point values
+        multiple_points_chart_y = [np.mean(fp) for fp, _ in multiple_points_chart]
+
+        fig = make_constellation_plot_dash(
+            factual_score=self.factual_score,
+            single_points_chart=single_points_chart,
+            text_features=text_features,
+            multiple_points_chart=multiple_points_chart,
+            multiple_points_chart_y=multiple_points_chart_y,
+            single_points=single_points,
+            class_names=self.class_names,
+            cf_score=self.cf_score,
+            point_to_pred=point_to_pred,
+            decision_threshold=self.decision_threshold,
+            port=port,
+            debug=debug
+        )
+
+
+        return fig
+
