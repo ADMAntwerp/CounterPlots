@@ -152,23 +152,30 @@ def get_subcoalitions_sample(
     logger.debug("Making {} Shapley comparisons (max={})".format(sample_size, max_n_edges))
 
     nodes = []
+    # Accumulate edges so we can optionally return them
+    edge_start_nodes = []
+    edge_end_nodes = []
 
     # random edges
     start, end = sample_random_edges(features, sample_size, rng)
     nodes.extend(start)
     nodes.extend(end)
+    edge_start_nodes.extend(start)
+    edge_end_nodes.extend(end)
 
     if ensure_outer_edges == True:
         start, end = get_outer_edges(features)
         nodes.extend(start)
         nodes.extend(end)
+        edge_start_nodes.extend(start)
+        edge_end_nodes.extend(end)
     else:
         # Ensure at least outer nodes are present
         nodes.extend(((), tuple(features)))
 
     if return_as_edges == True:
         # 3. Deduplicate edges - # O(sample_size) avg, O(sample_size**2) at worst
-        edges = list(dict.fromkeys(zip(start_nodes, end_nodes)))
+        edges = list(dict.fromkeys(zip(edge_start_nodes, edge_end_nodes)))
         start_nodes, end_nodes = zip(*edges)
 
         return tuple(start_nodes), tuple(end_nodes)
