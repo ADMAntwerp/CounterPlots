@@ -125,7 +125,7 @@ def sample_random_edges(features, sample_size, rng=None):
             size=n_draw,
             replace=False
         )
-        # Convert to bit to constuct edges
+        # Convert to bit to construct edges
         base_bits = int_to_bits(base_ints, n_features - 1)
         end_bits = insert_bit(base_bits, feat_idx, 1)
         start_bits = end_bits.copy()
