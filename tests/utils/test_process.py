@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from counterplots.utils.process import create_adapted_model_and_class, greedy_strategy, factorial, \
-    calc_adapted_instance, generate_contribution_graph, calc_shapley_values_between, _convert_legendvalue
+    calc_adapted_instance, calc_contribution_graph, calc_shapley_values_between, _convert_legendvalue
 
 
 class TestScript(unittest.TestCase):
@@ -102,14 +102,14 @@ class TestScript(unittest.TestCase):
 
         self.assertEqual(adapted_instance, [0.4, 0.2, 0.6])
 
-    def test_generate_contribution_graph(self):
+    def test_calc_contribution_graph(self):
         instance1 = self.factual
         instance2 = self.cf
         model = lambda x: np.array([0.7]) # noqa
         indices_feature_diff = [0, 2]
         class_of_interest_index = 0
 
-        contribution_graph = generate_contribution_graph(instance1, instance2, model, indices_feature_diff,
+        contribution_graph = calc_contribution_graph(instance1, instance2, model, indices_feature_diff,
                                                          class_of_interest_index)
 
         self.assertEqual(len(contribution_graph), 4)
