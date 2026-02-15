@@ -325,7 +325,7 @@ class CreatePlot:
             cf_score=self.cf_score,
             point_to_pred=point_to_pred,
             decision_threshold=self.decision_threshold,
-            port=8050,
+            port=port,
             debug=debug
         )
 
