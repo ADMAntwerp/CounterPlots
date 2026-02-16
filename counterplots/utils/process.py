@@ -107,8 +107,15 @@ def _get_all_subcoalitions(indices_feature_diff):
 
 
 def _generate_subcoalitions(indices_feature_diff, sample_kwargs):
+    # Convert numpy array to list for compatibility
+    if hasattr(indices_feature_diff, 'tolist'):
+        indices_feature_diff = indices_feature_diff.tolist()
+    
     if sample_kwargs is None:
         return _get_all_subcoalitions(indices_feature_diff)
+
+    if "n" not in sample_kwargs:
+        raise ValueError("sample_kwargs must contain key 'n' specifying the sample size")
 
     return _get_subcoalitions_sample(
         indices_feature_diff,

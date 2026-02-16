@@ -100,19 +100,19 @@ class TestScript(unittest.TestCase):
 
         adapted_instance = calc_adapted_instance(instance, instance2, indices)
 
-        self.assertEqual(adapted_instance, [0.4, 0.2, 0.6])
+        np.testing.assert_array_equal(adapted_instance, [0.4, 0.2, 0.6])
 
     def test_calc_contribution_graph(self):
         instance1 = self.factual
         instance2 = self.cf
         model = lambda x: np.array([0.7]) # noqa
-        indices_feature_diff = [0, 2]
         class_of_interest_index = 0
 
-        contribution_graph = calc_contribution_graph(instance1, instance2, model, indices_feature_diff,
+        contribution_graph = calc_contribution_graph(instance1, instance2, model,
                                                          class_of_interest_index)
 
-        self.assertEqual(len(contribution_graph), 4)
+        # All 3 features are different, so we should have 2^3 = 8 coalitions
+        self.assertEqual(len(contribution_graph), 8)
         self.assertIn((), contribution_graph)
         self.assertIn((0,), contribution_graph)
         self.assertIn((2,), contribution_graph)

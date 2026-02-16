@@ -362,14 +362,12 @@ class TestSampleKwargsIntegration(unittest.TestCase):
 
     def test_calc_contribution_graph_with_sample_kwargs(self):
         """Test that calc_contribution_graph accepts sample_kwargs."""
-        indices = [0, 1, 2]
         sample_kwargs = {'n': 6}
         
         graph = calc_contribution_graph(
             self.instance1,
             self.instance2,
             self.model,
-            indices,
             sample_kwargs=sample_kwargs
         )
         
@@ -383,7 +381,6 @@ class TestSampleKwargsIntegration(unittest.TestCase):
 
     def test_calc_contribution_graph_sample_kwargs_missing_n(self):
         """Test that missing 'n' key raises ValueError."""
-        indices = [0, 1, 2]
         sample_kwargs = {'ensure_outer_edges': True}  # Missing 'n'
         
         with self.assertRaises(ValueError) as cm:
@@ -391,22 +388,19 @@ class TestSampleKwargsIntegration(unittest.TestCase):
                 self.instance1,
                 self.instance2,
                 self.model,
-                indices,
                 sample_kwargs=sample_kwargs
             )
         
-        self.assertIn("must contain 'n' key", str(cm.exception))
+        self.assertIn("must contain key 'n'", str(cm.exception))
 
     def test_calc_contribution_graph_sample_kwargs_with_ensure_outer_edges(self):
         """Test sample_kwargs with ensure_outer_edges parameter."""
-        indices = [0, 1]
         sample_kwargs = {'n': 4, 'ensure_outer_edges': True}
         
         graph = calc_contribution_graph(
             self.instance1[:2],
             self.instance2[:2],
             self.model,
-            indices,
             sample_kwargs=sample_kwargs
         )
         
@@ -418,14 +412,12 @@ class TestSampleKwargsIntegration(unittest.TestCase):
 
     def test_calc_contribution_graph_sample_kwargs_without_ensure_outer_edges(self):
         """Test sample_kwargs with ensure_outer_edges=False."""
-        indices = [0, 1]
         sample_kwargs = {'n': 4, 'ensure_outer_edges': False}
         
         graph = calc_contribution_graph(
             self.instance1[:2],
             self.instance2[:2],
             self.model,
-            indices,
             sample_kwargs=sample_kwargs
         )
         
@@ -435,13 +427,11 @@ class TestSampleKwargsIntegration(unittest.TestCase):
 
     def test_calc_contribution_graph_without_sample_kwargs(self):
         """Test that calc_contribution_graph works without sample_kwargs (full enumeration)."""
-        indices = [0, 1]
         
         graph = calc_contribution_graph(
             self.instance1[:2],
             self.instance2[:2],
             self.model,
-            indices,
             sample_kwargs=None
         )
         
@@ -457,14 +447,12 @@ class TestSampleKwargsIntegration(unittest.TestCase):
         # Use 4 features so we have more coalitions to sample from
         instance1 = np.array([0.0, 0.0, 0.0, 0.0])
         instance2 = np.array([1.0, 1.0, 1.0, 1.0])
-        indices = [0, 1, 2, 3]
         
         # Full enumeration: 2^4 = 16 coalitions
         full_graph = calc_contribution_graph(
             instance1,
             instance2,
             self.model,
-            indices,
             sample_kwargs=None
         )
         
@@ -474,7 +462,6 @@ class TestSampleKwargsIntegration(unittest.TestCase):
             instance1,
             instance2,
             self.model,
-            indices,
             sample_kwargs=sample_kwargs
         )
         
@@ -485,14 +472,12 @@ class TestSampleKwargsIntegration(unittest.TestCase):
 
     def test_calc_contribution_graph_sample_predictions_are_correct(self):
         """Test that sampled graph contains correct predictions."""
-        indices = [0, 1]
         sample_kwargs = {'n': 4}
         
         graph = calc_contribution_graph(
             self.instance1[:2],
             self.instance2[:2],
             self.model,
-            indices,
             sample_kwargs=sample_kwargs
         )
         

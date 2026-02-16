@@ -341,7 +341,7 @@ class ConstellationPlotDash:
                         # Select coalition
                         fig = self._create_base_figure(selected_coalition=selected_coalition_idx)
                         features_str = ", ".join([
-                            re.sub(" \(.*\)", "", self.text_features[e])
+                            re.sub(r" \(.*\)", "", self.text_features[e])
                             for e in self.coalition_info[selected_coalition_idx]])
                         message = f"Selected feature changes: ({features_str})"
                     
