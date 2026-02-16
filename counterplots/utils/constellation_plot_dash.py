@@ -2,7 +2,7 @@ import numpy as np
 from dash import Dash, dcc, html, Input, Output, State, callback_context
 import plotly.graph_objects as go
 import re
-from ._COLORS import RED1, PINK1, BLUE1, LIGHT_GREY, DARK_GREY
+from ._COLORS import RED1, PINK1, BLUE1, LIGHT_GREY
 
 class ConstellationPlotDash:
     """Interactive constellation plot using Dash for full interactivity."""

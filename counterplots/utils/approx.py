@@ -114,7 +114,6 @@ def sample_random_edges(features, sample_size, rng=None):
     samples_per_feat = sample_size // n_features
     start_nodes = []
     end_nodes = []
-    feature_indices = []
 
     for feat_idx in range(n_features):
         # sample unique (K-1)-bit integers
@@ -162,7 +161,7 @@ def _get_subcoalitions_sample(
     all_start.extend(start)
     all_end.extend(end)
 
-    if ensure_outer_edges == True:
+    if ensure_outer_edges:
         start, end = get_outer_edges(features)
         all_start.extend(start)
         all_end.extend(end)

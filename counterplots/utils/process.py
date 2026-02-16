@@ -261,7 +261,7 @@ def calc_contribution_graph(
             class_of_interest_index=class_of_interest_index,
             cpu_count_=multiproc_kwargs['cpu_count']
         )
-    return contribution_graph
+
 
 def get_shapley_feature_contribution(contribution_graph: dict, feature_index: int):
     """

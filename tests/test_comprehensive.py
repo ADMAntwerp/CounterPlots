@@ -36,7 +36,6 @@ from counterplots.utils.process import (
     _convert_legendvalue,
     _format_e,
     _get_all_subcoalitions,
-    _generate_subcoalitions,
 )
 from counterplots.utils.approx import (
     int_to_bits,
