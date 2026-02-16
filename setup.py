@@ -1,29 +1,7 @@
 from setuptools import setup, find_packages
 
-with open('README.md') as f:
-    README = f.read()
-
-with open('LICENSE.txt') as f:
-    LICENSE = f.read()
-
-setup_args = dict(
-    name='counterplots',
-    version='0.0.9',
-    description='Plotting tool for counterfactual explanations',
-    long_description_content_type='text/markdown',
-    long_description=README,
-    license='MIT',
-    packages=find_packages(exclude=('tests\*', 'exp_notebooks\*', '_static\*')),
-    author='Raphael Mazzine Barbosa de Oliveira, Bjorge Meulemeester',
-    keywords=['Counterfactual Explanations', 'Visualization', 'Plotting', 'Explainable Artificial Intelligence', 'XAI', 'Machine Learning'],
-    url='https://github.com/ADMAntwerp/CounterPlots',
-    download_url='https://pypi.org/project/counterplots/',
+# Configuration is in pyproject.toml
+setup(
+    packages=find_packages(exclude=('tests', 'exp_notebooks', '_static')),
 )
 
-install_requires = [
-'numpy>=1.24.3',
-'matplotlib>=3.7.1'
-]
-
-if __name__ == '__main__':
-    setup(**setup_args, install_requires=install_requires)
