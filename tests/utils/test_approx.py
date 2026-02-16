@@ -6,7 +6,7 @@ from counterplots.utils.approx import (
     insert_bit,
     get_outer_edges,
     sample_random_edges,
-    get_subcoalitions_sample
+    _get_subcoalitions_sample
 )
 from counterplots.utils.process import calc_contribution_graph
 
@@ -223,27 +223,27 @@ class TestSampleRandomEdges(unittest.TestCase):
 
 
 class TestGetSubcoalitionsSample(unittest.TestCase):
-    """Test the get_subcoalitions_sample function."""
+    """Test the _get_subcoalitions_sample function."""
 
-    def test_get_subcoalitions_sample_basic(self):
+    def test__get_subcoalitions_sample_basic(self):
         """Test basic functionality of subcoalition sampling."""
         features = ['A', 'B', 'C']
         sample_size = 6
         rng = np.random.default_rng(42)
         
-        result = get_subcoalitions_sample(features, sample_size, rng)
+        result = _get_subcoalitions_sample(features, sample_size, rng)
         
         # Should return a tuple of unique coalitions
         self.assertIsInstance(result, tuple)
         self.assertEqual(len(result), len(set(result)))  # All unique
 
-    def test_get_subcoalitions_sample_contains_outer_nodes(self):
+    def test__get_subcoalitions_sample_contains_outer_nodes(self):
         """Test that outer nodes are always included when ensure_outer_edges=True."""
         features = ['A', 'B', 'C']
         sample_size = 6
         rng = np.random.default_rng(42)
         
-        result = get_subcoalitions_sample(
+        result = _get_subcoalitions_sample(
             features, sample_size, rng, ensure_outer_edges=True
         )
         
@@ -251,13 +251,13 @@ class TestGetSubcoalitionsSample(unittest.TestCase):
         self.assertIn((), result)
         self.assertIn(tuple(features), result)
 
-    def test_get_subcoalitions_sample_without_outer_edges(self):
+    def test__get_subcoalitions_sample_without_outer_edges(self):
         """Test sampling without ensuring all outer edges."""
         features = ['A', 'B']
         sample_size = 2
         rng = np.random.default_rng(42)
         
-        result = get_subcoalitions_sample(
+        result = _get_subcoalitions_sample(
             features, sample_size, rng, ensure_outer_edges=False
         )
         
@@ -265,7 +265,7 @@ class TestGetSubcoalitionsSample(unittest.TestCase):
         self.assertIn((), result)
         self.assertIn(tuple(features), result)
 
-    def test_get_subcoalitions_sample_fractional_size(self):
+    def test__get_subcoalitions_sample_fractional_size(self):
         """Test that fractional sample size is converted to integer."""
         features = ['A', 'B', 'C']
         # Max edges is n_features * 2^(n_features - 1) = 3 * 4 = 12
@@ -273,18 +273,18 @@ class TestGetSubcoalitionsSample(unittest.TestCase):
         sample_size = 0.5
         rng = np.random.default_rng(42)
         
-        result = get_subcoalitions_sample(features, sample_size, rng)
+        result = _get_subcoalitions_sample(features, sample_size, rng)
         
         # Should work without error and return some coalitions
         self.assertGreater(len(result), 0)
 
-    def test_get_subcoalitions_sample_return_as_edges(self):
+    def test__get_subcoalitions_sample_return_as_edges(self):
         """Test returning results as edges instead of nodes."""
         features = ['A', 'B']
         sample_size = 4
         rng = np.random.default_rng(42)
         
-        start, end = get_subcoalitions_sample(
+        start, end = _get_subcoalitions_sample(
             features, sample_size, rng, return_as_edges=True
         )
         
@@ -293,13 +293,13 @@ class TestGetSubcoalitionsSample(unittest.TestCase):
         self.assertIsInstance(end, tuple)
         self.assertEqual(len(start), len(end))
 
-    def test_get_subcoalitions_sample_edges_are_unique(self):
+    def test__get_subcoalitions_sample_edges_are_unique(self):
         """Test that returned edges are deduplicated."""
         features = ['A', 'B']
         sample_size = 10
         rng = np.random.default_rng(42)
         
-        start, end = get_subcoalitions_sample(
+        start, end = _get_subcoalitions_sample(
             features, sample_size, rng, return_as_edges=True
         )
         
@@ -307,24 +307,24 @@ class TestGetSubcoalitionsSample(unittest.TestCase):
         # All edges should be unique
         self.assertEqual(len(edges), len(set(edges)))
 
-    def test_get_subcoalitions_sample_default_rng(self):
+    def test__get_subcoalitions_sample_default_rng(self):
         """Test that function works without providing rng."""
         features = ['A', 'B', 'C']
         sample_size = 6
         
-        result = get_subcoalitions_sample(features, sample_size)
+        result = _get_subcoalitions_sample(features, sample_size)
         
         # Should work without error
         self.assertGreater(len(result), 0)
 
-    def test_get_subcoalitions_sample_large_sample(self):
+    def test__get_subcoalitions_sample_large_sample(self):
         """Test sampling with large sample size."""
         features = ['A', 'B', 'C', 'D']
         # Max edges is n_features * 2^(n_features - 1) = 4 * 8 = 32
         sample_size = 30
         rng = np.random.default_rng(42)
         
-        result = get_subcoalitions_sample(features, sample_size, rng)
+        result = _get_subcoalitions_sample(features, sample_size, rng)
         
         # Should return valid coalitions
         self.assertGreater(len(result), 0)
@@ -333,13 +333,13 @@ class TestGetSubcoalitionsSample(unittest.TestCase):
             for feature in coalition:
                 self.assertIn(feature, features)
 
-    def test_get_subcoalitions_sample_integer_features(self):
+    def test__get_subcoalitions_sample_integer_features(self):
         """Test that function works with integer features."""
         features = [0, 1, 2]
         sample_size = 6
         rng = np.random.default_rng(42)
         
-        result = get_subcoalitions_sample(features, sample_size, rng)
+        result = _get_subcoalitions_sample(features, sample_size, rng)
         
         # Should work with integer features
         self.assertGreater(len(result), 0)
@@ -362,14 +362,12 @@ class TestSampleKwargsIntegration(unittest.TestCase):
 
     def test_calc_contribution_graph_with_sample_kwargs(self):
         """Test that calc_contribution_graph accepts sample_kwargs."""
-        indices = [0, 1, 2]
         sample_kwargs = {'n': 6}
         
         graph = calc_contribution_graph(
             self.instance1,
             self.instance2,
             self.model,
-            indices,
             sample_kwargs=sample_kwargs
         )
         
@@ -383,7 +381,6 @@ class TestSampleKwargsIntegration(unittest.TestCase):
 
     def test_calc_contribution_graph_sample_kwargs_missing_n(self):
         """Test that missing 'n' key raises ValueError."""
-        indices = [0, 1, 2]
         sample_kwargs = {'ensure_outer_edges': True}  # Missing 'n'
         
         with self.assertRaises(ValueError) as cm:
@@ -391,22 +388,19 @@ class TestSampleKwargsIntegration(unittest.TestCase):
                 self.instance1,
                 self.instance2,
                 self.model,
-                indices,
                 sample_kwargs=sample_kwargs
             )
         
-        self.assertIn("must contain 'n' key", str(cm.exception))
+        self.assertIn("must contain key 'n'", str(cm.exception))
 
     def test_calc_contribution_graph_sample_kwargs_with_ensure_outer_edges(self):
         """Test sample_kwargs with ensure_outer_edges parameter."""
-        indices = [0, 1]
         sample_kwargs = {'n': 4, 'ensure_outer_edges': True}
         
         graph = calc_contribution_graph(
             self.instance1[:2],
             self.instance2[:2],
             self.model,
-            indices,
             sample_kwargs=sample_kwargs
         )
         
@@ -418,14 +412,12 @@ class TestSampleKwargsIntegration(unittest.TestCase):
 
     def test_calc_contribution_graph_sample_kwargs_without_ensure_outer_edges(self):
         """Test sample_kwargs with ensure_outer_edges=False."""
-        indices = [0, 1]
         sample_kwargs = {'n': 4, 'ensure_outer_edges': False}
         
         graph = calc_contribution_graph(
             self.instance1[:2],
             self.instance2[:2],
             self.model,
-            indices,
             sample_kwargs=sample_kwargs
         )
         
@@ -435,13 +427,11 @@ class TestSampleKwargsIntegration(unittest.TestCase):
 
     def test_calc_contribution_graph_without_sample_kwargs(self):
         """Test that calc_contribution_graph works without sample_kwargs (full enumeration)."""
-        indices = [0, 1]
         
         graph = calc_contribution_graph(
             self.instance1[:2],
             self.instance2[:2],
             self.model,
-            indices,
             sample_kwargs=None
         )
         
@@ -457,14 +447,12 @@ class TestSampleKwargsIntegration(unittest.TestCase):
         # Use 4 features so we have more coalitions to sample from
         instance1 = np.array([0.0, 0.0, 0.0, 0.0])
         instance2 = np.array([1.0, 1.0, 1.0, 1.0])
-        indices = [0, 1, 2, 3]
         
         # Full enumeration: 2^4 = 16 coalitions
         full_graph = calc_contribution_graph(
             instance1,
             instance2,
             self.model,
-            indices,
             sample_kwargs=None
         )
         
@@ -474,7 +462,6 @@ class TestSampleKwargsIntegration(unittest.TestCase):
             instance1,
             instance2,
             self.model,
-            indices,
             sample_kwargs=sample_kwargs
         )
         
@@ -485,14 +472,12 @@ class TestSampleKwargsIntegration(unittest.TestCase):
 
     def test_calc_contribution_graph_sample_predictions_are_correct(self):
         """Test that sampled graph contains correct predictions."""
-        indices = [0, 1]
         sample_kwargs = {'n': 4}
         
         graph = calc_contribution_graph(
             self.instance1[:2],
             self.instance2[:2],
             self.model,
-            indices,
             sample_kwargs=sample_kwargs
         )
         
